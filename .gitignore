@@ -1,0 +1,5 @@
+**/.DS_Store
+**/*.swp
+**/*.swo
+opencode/.config/opencode/opencode.json
+opencode/.config/opencode/node_modules/

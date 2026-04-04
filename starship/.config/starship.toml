@@ -1,0 +1,13 @@
+add_newline = false
+format = """$directory$character"""
+right_format = """$all"""
+command_timeout = 800
+
+[golang]
+format = '[ ($version)](bold cyan) '
+
+[bun]
+format = '[$symbol($version)]($style) '
+
+[nodejs]
+format = '[$symbol($version)]($style) '
