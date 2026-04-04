@@ -25,7 +25,7 @@
   "mcp": {
     "n8n-mcp-homelab": {
       "type": "remote",
-      "url": "https://n8n.lab.horopesa.dev/mcp-server/http",
+      "url": "https://example.com/mcp-server/http",
       "headers": {
         "Authorization": "Bearer <replace-me>"
       },
