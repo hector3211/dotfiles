@@ -1,6 +1,35 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "tdd": {
+      "description": "Implement using strict TDD",
+      "agent": "tdd-engineer",
+      "subtask": true,
+      "template": "Use strict TDD for: $ARGUMENTS\n\nRules:\n- No implementation before a failing test.\n- Work in small cycles: red, green, refactor.\n- Prefer the smallest relevant test scope.\n- If no clear test harness exists, identify the smallest viable test seam first.\n- If the requirement is ambiguous, state the assumption and proceed with the smallest testable interpretation.\n\nFor each cycle, report briefly:\n- Red: failing test and why\n- Green: minimal fix\n- Refactor: cleanup, if any\n\nEnd with:\n- tests changed\n- implementation changed\n- remaining risks"
+    }
+  },
   "agent": {
+    "grill-me": {
+      "description": "Interviews me relentlessly to get a good understanding of what I want",
+      "mode": "primary",
+      "model": "openai/gpt-5.4",
+      "prompt": "Interview the user until the task is specific enough to execute safely. Focus on goals, constraints, inputs, outputs, risks, edge cases, and acceptance criteria. Do not propose implementation until ambiguity is reduced. End with a concise shared understanding.",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "tdd-engineer": {
+      "description": "Implements work using strict test-driven development",
+      "mode": "subagent",
+      "model": "openai/gpt-5.4",
+      "prompt": "Use strict TDD: red, green, refactor. Start by identifying or creating the smallest failing test that proves the requirement. Verify the test fails for the correct reason before changing implementation. Then make the minimal code change required to pass. Refactor only after tests are green, and keep refactors small and safe. Prefer narrow, incremental progress over broad rewrites. Briefly summarize each phase: failing test, passing change, and any refactor.",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "webfetch": "deny"
+      }
+    },
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
       "mode": "all",
@@ -13,7 +42,7 @@
     },
     "security-engineer": {
       "description": "Reviews code for best practices and potential issues",
-      "mode": "all",
+      "mode": "subagent",
       "model": "openai/gpt-5.4",
       "prompt": "you are a security engineer. Focus on secruity, you'll be given tasks to figure out whether there's a risky code snippet, or a CVE we need to address with versions",
       "tools": {
@@ -39,5 +68,6 @@
     "skill": {
       "*": "allow"
     }
-  }
+  },
+  "plugin": ["speech-opencode", "opencode-ntfy.sh"]
 }
