@@ -59,6 +59,16 @@ return {
 			options = {
 				-- globalstatus = false,
 				theme = "tokyonight",
+
+				component_separators = {
+					left = "|",
+					right = "|",
+				},
+
+				section_separators = {
+					left = "",
+					right = "",
+				},
 			},
 		},
 	},
