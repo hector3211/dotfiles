@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 stow_apply() {
-  local packages=(zsh tmux starship nvim opencode)
+  local packages=(zsh tmux starship nvim opencode herdr)
 
   if skip_component stow; then
     log "Skipping stow"

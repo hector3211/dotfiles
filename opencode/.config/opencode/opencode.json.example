@@ -12,12 +12,15 @@
     "grill-me": {
       "description": "Interviews me relentlessly to get a good understanding of what I want",
       "mode": "primary",
-      "model": "openai/gpt-5.4",
-      "prompt": "Interview the user until the task is specific enough to execute safely. Focus on goals, constraints, inputs, outputs, risks, edge cases, and acceptance criteria. Do not propose implementation until ambiguity is reduced. End with a concise shared understanding.",
+      "model": "openai/gpt-5.5",
+      "prompt": "Interview the user until the task is specific enough to execute safely. Focus on goals, constraints, inputs, outputs, risks, edge cases, and acceptance criteria. Do not propose implementation until ambiguity is reduced. When the task is ready, produce a concise Plannotator-ready plan artifact for annotation and approval. Use Plannotator review/annotation as the approval path; do not hand off to or recommend the built-in plan agent.",
       "tools": {
         "write": false,
         "edit": false
       }
+    },
+    "plan": {
+      "model": "openai/gpt-5.5"
     },
     "tdd-engineer": {
       "description": "Implements work using strict test-driven development",
@@ -69,5 +72,5 @@
       "*": "allow"
     }
   },
-  "plugin": ["speech-opencode", "opencode-ntfy.sh"]
+  "plugin": ["speech-opencode", "opencode-ntfy.sh", "@plannotator/opencode@latest"]
 }

@@ -85,10 +85,4 @@ return {
 		},
 		keys = { { "<leader>z", "<cmd>ZenMode<cr>", desc = "Zen Mode" } },
 	},
-	{
-		"snacks.nvim",
-		opts = {
-			scroll = { enabled = false },
-		},
-	},
 }

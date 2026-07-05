@@ -93,6 +93,7 @@ Managed packages in this repo:
 - `starship`
 - `nvim`
 - `opencode`
+- `herdr`
 
 The bootstrap applies them with GNU Stow using `--restow`.
 

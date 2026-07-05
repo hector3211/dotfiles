@@ -4,24 +4,8 @@
 local keymap = vim.keymap
 local opts = { noremap = true, silent = true }
 
--- Harpoon
-local harpoon_ui = require("harpoon.ui")
-local harpoon_mark = require("harpoon.mark")
-
-keymap.set("n", "<leader>e", function()
-	require("oil").toggle_float()
-end, { desc = "Toggle Oil " })
-
-keymap.set("n", "<leader>\\", function()
-	Snacks.terminal.toggle()
-end, { desc = "Toggle terminal" })
-
 -- Highlight on search, but clear on pressing <Esc> in normal mode
 keymap.set("n", "<Esc>", ":nohlsearch<CR>", opts)
-
--- GitWork Trees
-keymap.set("n", "<leader>tl", ":lua require('telescope').extensions.git_worktree.git_worktrees()<CR>", opts)
-keymap.set("n", "<leader>ta", ":lua require('telescope').extensions.git_worktree.create_git_worktree()<CR>", opts)
 
 -- Removing some default keymaps
 keymap.del("n", "[q", opts)
@@ -57,48 +41,6 @@ end, { desc = "Lsp: go to next indicator" })
 keymap.set("n", "<leader>p", function()
 	vim.diagnostic.jump({ count = -1, float = true })
 end, { desc = "Lsp: go to previous indicator" })
-
--- Harpoon keybinds --
--- Open harpoon ui
-keymap.set("n", "<leader>ho", function()
-	harpoon_ui.toggle_quick_menu()
-end, { desc = "harpoon toggle menu" })
-
--- Add current file to harpoon
-keymap.set("n", "<leader>ha", function()
-	harpoon_mark.add_file()
-end, { desc = "harpoon add file" })
-
--- Remove current file from harpoon
-keymap.set("n", "<leader>hr", function()
-	harpoon_mark.rm_file()
-end, { desc = "harpoon remove file" })
-
--- Remove all files from harpoon
-keymap.set("n", "<leader>hc", function()
-	harpoon_mark.clear_all()
-end, { desc = "harpoon delete list" })
-
--- Quickly jump to harpooned files
-keymap.set("n", "<leader>1", function()
-	harpoon_ui.nav_file(1)
-end, { desc = "harpoon go to 1" })
-
-keymap.set("n", "<leader>2", function()
-	harpoon_ui.nav_file(2)
-end, { desc = "harpoon go to 2" })
-
-keymap.set("n", "<leader>3", function()
-	harpoon_ui.nav_file(3)
-end, { desc = "harpoon go to 3" })
-
-keymap.set("n", "<leader>4", function()
-	harpoon_ui.nav_file(4)
-end, { desc = "harpoon go to 4" })
-
-keymap.set("n", "<leader>5", function()
-	harpoon_ui.nav_file(5)
-end, { desc = "harpoon go to 5" })
 
 -- TSC autocommand keybind to run TypeScripts tsc
 keymap.set("n", "<leader>tc", ":TSC<cr>", { desc = "[T]ypeScript [C]ompile" })
