@@ -43,6 +43,10 @@
         "edit": false
       }
     },
+    "explore": {
+      "description": "Fast, read-only lookups, targeted code searches, and small data reviews",
+      "model": "opencode/kimi-k2.7-code"
+    },
     "security-engineer": {
       "description": "Reviews code for best practices and potential issues",
       "mode": "subagent",
