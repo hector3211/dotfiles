@@ -1,4 +1,10 @@
 return {
+	{
+		"folke/tokyonight.nvim",
+		lazy = false,
+		priority = 1000,
+		opts = { style = "storm" },
+	},
 	-- messages, cmdline and the popupmenu
 	{
 		"folke/noice.nvim",

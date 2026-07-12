@@ -2,12 +2,15 @@
 
 Personal [LazyVim](https://github.com/LazyVim/LazyVim) setup.
 
-Navigation plugins live in `lua/plugins/navigation.lua`:
+Custom plugins are grouped by purpose:
 
-- `folke/snacks.nvim` for picker, input, notifications, and terminal
-- `stevearc/oil.nvim` for file editing/navigation
+- `lua/plugins/navigation.lua` configures Snacks and Oil navigation
+- `lua/plugins/lsp.lua` contains only custom server behavior
+- `lua/plugins/ui.lua` contains colorscheme and interface overrides
+- `lua/plugins/disabled.lua` documents intentionally disabled LazyVim plugins
 
 Oil owns the explorer mappings: `<leader>e`, `<leader>E`, `<leader>fe`, and `<leader>fE`.
+LazyVim supplies the standard Snacks picker mappings and language tooling defaults.
 
 Intentionally disabled for a slimmer setup: `fzf-lua`, Harpoon, Neo-tree, Snacks Explorer, and Treesitter-related plugins.
 

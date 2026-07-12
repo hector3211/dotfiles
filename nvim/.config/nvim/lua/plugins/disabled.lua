@@ -2,6 +2,7 @@ return {
 	{ "nvim-neo-tree/neo-tree.nvim", enabled = false },
 	{ "ibhagwan/fzf-lua", enabled = false },
 	{ "ThePrimeagen/harpoon", enabled = false },
+	{ "folke/flash.nvim", enabled = false },
 	{ "nvim-treesitter/nvim-treesitter", enabled = false },
 	{ "nvim-treesitter/nvim-treesitter-textobjects", enabled = false },
 	{ "windwp/nvim-ts-autotag", enabled = false },
