@@ -12,6 +12,13 @@ config.window_decorations = "NONE"
 config.max_fps = 120
 config.animation_fps = 120
 config.scrollback_lines = 10000
+config.disable_default_key_bindings = true
+
+config.keys = {
+	{ key = "c", mods = "CTRL|SHIFT", action = wezterm.action.CopyTo("Clipboard") },
+	{ key = "v", mods = "CTRL|SHIFT", action = wezterm.action.PasteFrom("Clipboard") },
+	{ key = "r", mods = "CTRL|SHIFT", action = wezterm.action.ReloadConfiguration },
+}
 
 config.window_padding = {
 	left = 5,
@@ -24,6 +31,12 @@ config.hide_tab_bar_if_only_one_tab = true
 config.tab_bar_at_bottom = true
 config.use_fancy_tab_bar = false
 config.tab_and_split_indices_are_zero_based = true
+
+wezterm.on("gui-startup", function(cmd)
+	wezterm.mux.spawn_window(cmd or {
+		args = { "zsh", "-lc", "herdr" },
+	})
+end)
 
 -- The filled in variant of the < symbol
 local SOLID_LEFT_ARROW = wezterm.nerdfonts.pl_right_hard_divider
