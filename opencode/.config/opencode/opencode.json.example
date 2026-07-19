@@ -45,7 +45,11 @@
     },
     "explore": {
       "description": "Fast, read-only lookups, targeted code searches, and small data reviews",
-      "model": "opencode/kimi-k2.7-code"
+      "model": "opencode-go/deepseek-v4-flash"
+    },
+    "general": {
+      "description": "Medium-complexity research, analysis, and self-contained implementation tasks",
+      "model": "opencode-go/kimi-k3"
     },
     "security-engineer": {
       "description": "Reviews code for best practices and potential issues",
