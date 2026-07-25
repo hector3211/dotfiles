@@ -21,7 +21,7 @@ Use `/review-my-prs` when you want help reviewing PRs that are waiting on you.
 The canonical baseline lives at:
 
 ```text
-/home/drama321/.config/opencode/docs/github-issue-workflow-standard.md
+~/.config/opencode/docs/github-issue-workflow-standard.md
 ```
 
 Improve this baseline when the workflow changes. Then run `/github-workflow-init` in repos that should receive the updated policy.

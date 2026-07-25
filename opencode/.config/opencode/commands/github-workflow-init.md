@@ -7,7 +7,7 @@ Set up the standard GitHub Issue workflow in the current repository.
 Use this global baseline as the source of truth:
 
 ```text
-/home/drama321/.config/opencode/docs/github-issue-workflow-standard.md
+~/.config/opencode/docs/github-issue-workflow-standard.md
 ```
 
 Tasks:

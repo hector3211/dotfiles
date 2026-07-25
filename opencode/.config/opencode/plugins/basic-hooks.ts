@@ -151,7 +151,6 @@ export const BasicHooks: Plugin = async ({ client, directory, worktree }) => {
           message: "tool.execute.after",
           extra: {
             tool: input.tool,
-            args: input.args,
           },
         },
       })

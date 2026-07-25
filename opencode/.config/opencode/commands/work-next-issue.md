@@ -8,7 +8,7 @@ First resolve workflow context in this order:
 
 1. Read `AGENTS.md` if present.
 2. Read `docs/github-issue-workflow.md` if present.
-3. Read `/home/drama321/.config/opencode/docs/github-issue-workflow-standard.md`.
+3. Read `~/.config/opencode/docs/github-issue-workflow-standard.md`.
 4. Use the workflow below only as fallback if the files above are missing.
 
 Default workflow:

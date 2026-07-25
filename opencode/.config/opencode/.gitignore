@@ -2,3 +2,24 @@ node_modules/
 package.json
 package-lock.json
 bun.lock
+
+# Local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
+
+# Runtime and installer-managed state
+*.log
+logs/
+cache/
+state/
+sessions/
+history/
+tmp/
+plugins/herdr-agent-state.js

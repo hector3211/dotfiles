@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "openai/gpt-5.6-sol",
-  "small_model": "openai/gpt-5.6-sol",
+  "small_model": "openai/gpt-5.6-luna",
   "command": {
     "tdd": {
       "description": "Implement using strict TDD",
@@ -33,7 +33,7 @@
     "tdd-engineer": {
       "description": "Implements work using strict test-driven development",
       "mode": "subagent",
-      "model": "openai/gpt-5.4",
+      "model": "openai/gpt-5.6-sol",
       "prompt": "Use strict TDD: red, green, refactor. Start by identifying or creating the smallest failing test that proves the requirement. Verify the test fails for the correct reason before changing implementation. Then make the minimal code change required to pass. Refactor only after tests are green, and keep refactors small and safe. Prefer narrow, incremental progress over broad rewrites. Briefly summarize each phase: failing test, passing change, and any refactor.",
       "permission": {
         "edit": "allow",
@@ -81,13 +81,10 @@
       "enabled": true
     }
   },
-  "skills": {
-    "paths": ["/home/drama321/.config/opencode/skills"]
-  },
   "permission": {
     "skill": {
       "*": "allow"
     }
   },
-  "plugin": ["speech-opencode", "opencode-ntfy.sh", "@plannotator/opencode@latest"]
+  "plugin": ["speech-opencode", "opencode-ntfy.sh@1.1.0", "@plannotator/opencode@0.24.2"]
 }

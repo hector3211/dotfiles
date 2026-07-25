@@ -8,7 +8,7 @@ Resolve workflow context in this order:
 
 1. Read `AGENTS.md` if present.
 2. Read `docs/github-issue-workflow.md` if present.
-3. Read `/home/drama321/.config/opencode/docs/github-issue-workflow-standard.md`.
+3. Read `~/.config/opencode/docs/github-issue-workflow-standard.md`.
 
 Find PRs that need me by checking, in order:
 
