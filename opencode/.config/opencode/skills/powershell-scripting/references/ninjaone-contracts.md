@@ -8,7 +8,7 @@ Verified against public NinjaOne documentation on 2026-07-25. Recheck tenant beh
 - Set automation **Architecture = 64-bit** for deterministic x64 machine-scoped work. `All` follows the device's native architecture.
 - Choose SYSTEM, current user, or credential-store execution explicitly and validate that identity's access.
 - Custom scripts must not issue reboots. Detect reboot-required state, emit a concise status, return a code explicitly defined by the tenant automation, and let NinjaOne's native reboot automation perform the reboot.
-- Bound network, child-process, CIM, synchronization, retry, and polling operations below the configured NinjaOne job timeout. A minimal Model B launcher's synchronous wait may use that configured job timeout as its outer bound, but the target must still bound each operation it controls. Do not confuse the queue's indefinite pending duration with a runtime budget.
+- Bound network, child-process, CIM, synchronization, retry, and polling operations below the configured NinjaOne job timeout. Do not confuse the queue's indefinite pending duration with a runtime budget.
 - Set UTF-8 console/output encoding deliberately when Unicode must survive RMM output capture, and test the actual captured result.
 
 ## Script Variables And Parameters

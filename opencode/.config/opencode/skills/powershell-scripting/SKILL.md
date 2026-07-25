@@ -30,25 +30,22 @@ Separate required local work from optional reporting. Optional RMM/custom-field 
 
 ## Choose The Runtime
 
-- Default new production scripts to x64 `pwsh` and declare `#Requires -Version 7.0`.
-- Use **Model A** only when the agent-invoked host itself is verified x64 `pwsh`; it performs no relaunch.
-- Use **Model B** whenever any launcher invokes `pwsh`. Start from `assets/model-b-launcher.ps1` and keep the PowerShell 7 target separate.
-- Never place Windows PowerShell 5.1 bootstrap code in a file with `#Requires -Version 7.0`; PowerShell parses the file, then refuses execution before bootstrap logic can run when the requirement is not satisfied.
-- Support Windows PowerShell 5.1, x86, or dual-host execution only when the deployment contract requires it and each path is tested.
-- For full discovery, validation, relaunch, and registry-view rules, read `references/deployment-models.md`.
+- Generate one standalone script that runs independently. Do not create bootstrap scripts, launchers, chained targets, or self-relaunch logic.
+- Write for the PowerShell host, architecture, and execution identity supplied by the technician.
+- When PowerShell 7 is required, the deployment platform must invoke x64 `pwsh` directly; declare `#Requires -Version 7.0`.
+- PowerShell parses the file, then refuses execution before script control flow when `#Requires` is not satisfied.
+- Support Windows PowerShell 5.1, x86, ARM64, or multiple hosts only when the deployment contract requires and tests those paths.
+- For host, architecture, registry-view, and parser guidance, read `references/runtime-and-verification.md`.
 
 ## Authoring Baseline
 
 Start new targets from `assets/script-template.ps1`. Keep the smallest clear structure and include:
 
-- Comment-based help, `[CmdletBinding()]`, an explicit `param` block, requirements, inputs, and an exit-code table.
+- Standard comment-based help with an `Author:` entry under `.NOTES`, `[CmdletBinding()]`, and an explicit `param` block. PowerShell does not support `.AUTHOR` as a help keyword.
 - `Set-StrictMode -Version Latest` and `$ErrorActionPreference = 'Stop'`.
-- `$PSNativeCommandUseErrorActionPreference = $true` on PowerShell 7.3 or later. Invoke a native command directly only when `0` is its sole success code; use `ProcessStartInfo` or an equivalent explicit wrapper when codes such as MSI `3010` are allowed.
-- Explicit UTF-8 console/output encoding where RMM capture is part of the contract.
-- Up-front validation, desired-state detection, early exits, bounded waits, post-change verification, and `finally` cleanup.
-- `0` for success/already compliant and stable nonzero codes for actionable outcomes. Interpret an installer's MSI `3010` as successful installation with reboot required; this does not require the script itself to exit `3010`.
+- Add host requirements, encoding, input validation, desired-state checks, exit codes, native-process handling, verification, and cleanup only when the technician's context requires them.
 
-Preserve an existing `.AUTHOR`. For a new script, use an established project author or reliably configured full name; never invent a legal name from an OS username, and ask when attribution is required but unknown.
+Preserve existing author attribution under `.NOTES`. For a new script, use an established project author or reliably configured full name; never invent a legal name from an OS username, and ask when attribution is required but unknown.
 
 `$ErrorActionPreference = 'Stop'` affects PowerShell errors, not native executable failures. Invoke native programs with separately constructed arguments, account for `$PSNativeCommandUseErrorActionPreference`, inspect allowed exit codes, and verify resulting state. Never build a command string, execute an uninstall string opaquely, or put secrets in process arguments.
 
@@ -70,7 +67,7 @@ Preserve an existing `.AUTHOR`. For a new script, use an established project aut
 ## Verification
 
 1. Reproduce the real execution path as closely as possible: same host, bitness, identity, inputs, and RMM context.
-2. Parse each script without executing it under every supported PowerShell host using the commands in `references/deployment-models.md#parser-validation`.
+2. Parse each script without executing it under every supported PowerShell host using `references/runtime-and-verification.md#parser-validation`.
 3. Run Pester coverage for nontrivial logic and test missing, blank, malformed, boundary, false/zero, conflicting, already-compliant, failure, timeout, and successful-change paths.
 4. Test native success, expected alternate success such as MSI `3010`, unexpected exit, final-state mismatch, and cleanup after success and failure.
 5. Use Windows Sandbox, a disposable VM, or a designated endpoint for installers, services, registry, SYSTEM, and destructive behavior.
