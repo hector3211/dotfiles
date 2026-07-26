@@ -1,7 +1,5 @@
 # PowerShell Platform
 
-This supplements, and does not override or expand, the main `powershell-scripting` skill.
-
 - Detect the actual host, version, edition, architecture, OS, and child shell before choosing syntax, modules, or process behavior. Verify support, version, feature, and deprecation facts against current authoritative documentation and the actual host.
 - Choose features compatible with every contracted host. Do not assume a current or latest PowerShell release, and do not add a compatibility path for an uncontracted host.
 - Confirm migration semantics before replacing MSOnline, AzureAD, `wmic`, legacy WMI, or related tooling. Microsoft Graph replacements must preserve authentication, scopes, paging, schema, filtering, mutation, and error behavior. Use CIM where supported; never use `Win32_Product` for inventory.

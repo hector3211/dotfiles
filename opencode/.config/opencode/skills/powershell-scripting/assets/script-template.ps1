@@ -6,7 +6,7 @@
     Reaches the intended outcome, reports when the system is already compliant, and verifies the final state.
 
 .PARAMETER ExampleParameter
-    Required example value for the requested operation.
+    Example value for the requested operation. Omitted or blank values are intentionally validated inside script control flow so those validation outcomes do not bypass stable error-output and exit-code handling. Other parameter-binding failures still occur before script control flow.
 
 .EXAMPLE
     .\Set-Example.ps1 -ExampleParameter 'Value'
@@ -22,6 +22,7 @@
 
 [CmdletBinding()]
 param(
+    [AllowEmptyString()]
     [string]$ExampleParameter
 )
 
@@ -61,11 +62,15 @@ try {
     # Detect desired state and exit early when already compliant.
     # Perform the required change.
     # Verify final state.
-    Write-Log -Message 'Completed.'
-    exit 0
+    Write-Log -Level Error -Message 'Template is incomplete; implement the required change and final-state verification before deployment.'
+    exit 1
+    # Write-Log -Message 'Completed.'
+    # exit 0
 }
 catch {
     Write-Log -Level Error -Message 'Script failed. Run again with -Verbose for diagnostic context.'
+    # Log raw exception messages only after proving they cannot contain secrets or input values.
+    # Write-Log -Level Verbose -Message $_.Exception.Message
     # Add task-specific sanitized verbose detail here only when it is safe.
     Write-Log -Level Verbose -Message "Exception type: $($_.Exception.GetType().FullName); script line: $($_.InvocationInfo.ScriptLineNumber)"
     exit 1
