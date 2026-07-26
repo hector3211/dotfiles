@@ -22,6 +22,7 @@ param(
     [string]$ExampleParameter
 )
 
+Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Write-Log {
