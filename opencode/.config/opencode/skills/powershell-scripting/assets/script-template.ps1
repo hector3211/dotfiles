@@ -1,3 +1,5 @@
+#Requires -Version 5.1
+
 <#
 .SYNOPSIS
     Performs the requested automation.
@@ -14,20 +16,25 @@
 
 .NOTES
     Author: <replace-with-author>
-    Exit codes: 0 = completed or already compliant; 1 = failure.
-    Verbose output: add -Verbose to the script parameters field when
-    troubleshooting. It is off unless a technician passes it, so the default
-    output is written to stand on its own.
+    Exit codes: 0 = completed or already compliant; 1 = failure;
+    3010 = completed, reboot required. Emit 3010 only when the tenant
+    automation contract defines it; otherwise report the pending reboot in
+    output and exit 0. Delete the reboot path entirely if this script cannot
+    require one.
+    Do not raise #Requires -Version above 5.1 based on the development host.
 #>
 
 [CmdletBinding()]
 param(
-    [AllowEmptyString()]
+    # Deliberately unvalidated at bind time. See .PARAMETER and the check inside try.
     [string]$ExampleParameter
 )
 
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
+
+# Set to $true by any change that requires a reboot to reach the final state.
+$script:RebootRequired = $false
 
 function Write-Log {
     param(
@@ -35,7 +42,7 @@ function Write-Log {
         [ValidateNotNullOrEmpty()]
         [string]$Message,
 
-        [ValidateSet('Info', 'Warning', 'Error', 'Verbose')]
+        [ValidateSet('Info', 'Warning', 'Error')]
         [string]$Level = 'Info'
     )
 
@@ -43,13 +50,17 @@ function Write-Log {
     This is the single RMM output surface. Never pass secrets, credential objects, or raw exceptions.
     Info is one line per meaningful found, changed, or verified outcome with no banners, narration, or echoed inputs.
     Error is one concise host line; the caller sets the exit code.
-    Verbose is diagnostics and is assumed off.
+
+    Error deliberately writes to the host stream, not the error stream, because RMM
+    consoles capture host output reliably and error records inconsistently. The
+    tradeoff: a failing run leaves $Error and the error stream empty, so tests and CI
+    must assert failure on the exit code. Do not "fix" this with Write-Error unless
+    the delivery contract stops depending on RMM console capture.
     #>
     switch ($Level) {
-        'Info' { Write-Host $Message } # RMM hosts reliably capture host output.
+        'Info' { Write-Host $Message }
         'Warning' { Write-Warning $Message }
         'Error' { Write-Host "ERROR: $Message" }
-        'Verbose' { Write-Verbose $Message }
     }
 }
 
@@ -64,15 +75,21 @@ try {
     # Verify final state.
     Write-Log -Level Error -Message 'Template is incomplete; implement the required change and final-state verification before deployment.'
     exit 1
+
+    # Replace the two lines above with the verified success path:
+    #
+    # if ($script:RebootRequired) {
+    #     Write-Log -Message 'Completed; reboot required to reach the final state.'
+    #     exit 3010
+    # }
+    #
     # Write-Log -Message 'Completed.'
     # exit 0
 }
 catch {
-    Write-Log -Level Error -Message 'Script failed. Run again with -Verbose for diagnostic context.'
-    # Log raw exception messages only after proving they cannot contain secrets or input values.
-    # Write-Log -Level Verbose -Message $_.Exception.Message
-    # Add task-specific sanitized verbose detail here only when it is safe.
-    Write-Log -Level Verbose -Message "Exception type: $($_.Exception.GetType().FullName); script line: $($_.InvocationInfo.ScriptLineNumber)"
+    # Replace with the specific failure and whether any change was applied.
+    # Do not tell the technician to re-run: a partially applied change makes that unsafe.
+    Write-Log -Level Error -Message 'Script failed; final state was not verified.'
     exit 1
 }
 finally {
