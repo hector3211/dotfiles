@@ -71,6 +71,8 @@ Use the smallest clear structure. Add functions only when they improve clarity o
 
 Explicitly define the actual agent host, PowerShell architecture, execution identity, timeout, and output behavior. Test the actual agent path whenever those details affect behavior.
 
+For standard NinjaOne Windows PowerShell automations, default to 64-bit Windows PowerShell 5.1 compatibility (`powershell.exe`). Developers may use PowerShell 7 (`pwsh.exe`) interactively, but final parser validation, Pester tests, and end-to-end execution must pass under 64-bit Windows PowerShell 5.1. Treat PowerShell 7 validation as secondary compatibility coverage. Require or use PowerShell 7 only when the delivery contract explicitly ensures it is installed, resolves a trusted `pwsh.exe`, and invokes that executable. Do not raise `#Requires -Version` above 5.1 based only on the development host.
+
 - NinjaOne values are untrusted strings. Checkbox values arrive as strings such as `'true'` and `'false'`; parse them explicitly. Do not directly cast them with `[bool]`: `[bool]'false'` is `$true`.
   ```powershell
   $enabled = $env:ExampleCheckbox -eq 'true'
