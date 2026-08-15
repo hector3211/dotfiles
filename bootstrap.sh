@@ -23,6 +23,7 @@ source "$REPO_ROOT/modules/zen.sh"
 source "$REPO_ROOT/modules/docker.sh"
 source "$REPO_ROOT/modules/stow.sh"
 source "$REPO_ROOT/modules/skills.sh"
+source "$REPO_ROOT/modules/pi.sh"
 source "$REPO_ROOT/modules/verify.sh"
 
 main() {
@@ -41,6 +42,7 @@ main() {
   docker_install
   stow_apply
   shared_skills_apply
+  pi_resources_apply
   opencode_seed_config
   verify_install
 

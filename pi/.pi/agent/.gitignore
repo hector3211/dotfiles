@@ -1,0 +1,17 @@
+# Machine-local and sensitive Pi state
+settings.json
+auth.json
+sessions/
+npm/
+git/
+bin/
+models-store.json
+trust.json
+cache/
+cookies/
+*.cookie
+*.cookies
+*.log
+
+# Keep the portable seed configuration
+!settings.json.example

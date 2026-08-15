@@ -117,6 +117,18 @@ node scripts/link-skills.mjs
 
 The script derives paths from its own repository location and the current user's home directory, so the checkout can live anywhere. It creates Windows junctions and Unix directory symlinks. It never replaces an existing real directory or a link with an unexpected target.
 
+## Pi Configuration
+
+Portable Pi agents, prompt templates, and the subagent extension live under `pi/.pi/agent/`. The committed `settings.json.example` defaults to `openai-codex/gpt-5.6-sol` with medium thinking. The `explore` subagent uses `openai-codex/gpt-5.6-luna` with high thinking for fast read-only code and web lookups.
+
+Linux bootstrap runs the safe Pi resource linker automatically without linking the entire `~/.pi` directory. On Windows, or to configure only Pi, run:
+
+```bash
+node scripts/link-pi.mjs
+```
+
+The linker preserves an existing machine-local `~/.pi/agent/settings.json`, allowing platform-specific options such as Windows `shellPath`. If no settings file exists, it seeds one from the portable example. Authentication, sessions, installed packages, caches, logs, and generated model data are never linked into the repository.
+
 ## OpenCode Config
 
 `bootstrap.sh` seeds `~/.config/opencode/opencode.json` from `opencode/.config/opencode/opencode.json.example` only when the real config file does not already exist.
