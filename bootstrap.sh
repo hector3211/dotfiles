@@ -22,6 +22,7 @@ source "$REPO_ROOT/modules/chrome.sh"
 source "$REPO_ROOT/modules/zen.sh"
 source "$REPO_ROOT/modules/docker.sh"
 source "$REPO_ROOT/modules/stow.sh"
+source "$REPO_ROOT/modules/skills.sh"
 source "$REPO_ROOT/modules/verify.sh"
 
 main() {
@@ -39,6 +40,7 @@ main() {
   zen_install
   docker_install
   stow_apply
+  shared_skills_apply
   opencode_seed_config
   verify_install
 

@@ -99,6 +99,24 @@ The bootstrap applies them with GNU Stow using `--restow`.
 
 If an existing file conflicts with a symlink target, Stow stops and shows the conflict instead of overwriting it silently.
 
+## Shared AI Skills
+
+The canonical skill collection is `opencode/.config/opencode/skills/`. It combines the curated OpenCode skills with the enabled Claude Code skills.
+
+This directory is exposed at:
+
+- `~/.config/opencode/skills` for OpenCode (also managed by Stow on Linux)
+- `~/.agents/skills` for Agent Skills-compatible harnesses such as Pi
+- `~/.claude/skills` for Claude Code
+
+Linux bootstrap configures the shared links automatically. On Windows, or to configure only skills without running the full bootstrap, run:
+
+```bash
+node scripts/link-skills.mjs
+```
+
+The script derives paths from its own repository location and the current user's home directory, so the checkout can live anywhere. It creates Windows junctions and Unix directory symlinks. It never replaces an existing real directory or a link with an unexpected target.
+
 ## OpenCode Config
 
 `bootstrap.sh` seeds `~/.config/opencode/opencode.json` from `opencode/.config/opencode/opencode.json.example` only when the real config file does not already exist.
