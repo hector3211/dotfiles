@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "cloakCharacter": "*",
+  "cloakLength": 64,
+  "tryAllPatterns": true,
+  "patterns": [
+    {
+      "filePattern": [
+        ".env",
+        ".env.*",
+        "**/.env",
+        "**/.env.*"
+      ],
+      "cloakPattern": {
+        "pattern": "^(\\s*(?:export\\s+)?[A-Za-z_][A-Za-z0-9_]*\\s*=\\s*)(.*)$",
+        "replace": "$1"
+      }
+    }
+  ]
+}
