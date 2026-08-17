@@ -114,7 +114,7 @@ export default function (pi: ExtensionAPI) {
 					theme.fg("muted", compactPath(ctx.cwd)),
 					branch ? theme.fg("success", ` ${branch}`) : undefined,
 					theme.fg("accent", `◉ ${model}`) + theme.fg("dim", ` · ${pi.getThinkingLevel()}`),
-					theme.fg("muted", `◫ ${contextLabel(ctx)}`),
+					theme.fg("muted", `ctx ${contextLabel(ctx)}`),
 				].filter((segment): segment is string => Boolean(segment));
 
 				const status = truncateToWidth(segments.join(separator), width, "");
