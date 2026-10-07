@@ -101,7 +101,9 @@ If an existing file conflicts with a symlink target, Stow stops and shows the co
 
 ## Shared AI Skills
 
-The canonical skill collection is `opencode/.config/opencode/skills/`. It combines the curated OpenCode skills with the enabled Claude Code skills.
+The canonical skill collection is `opencode/.config/opencode/skills/`. It contains the audited shared skill snapshot, including all 38 current Matt Pocock skills, the AWS collection, and curated OpenCode/Cloudflare skills. `opencode/skills-sources.json` records tracked upstream sources and explicitly lists skills without installation provenance; it is not a Skills CLI lockfile.
+
+The October 2026 cleanup removed `to-issues` and `design-an-interface`, replaced `creating-ec2-image-builder-pipeline` with `amazon-ec2-image-builder`, and refreshed `aws-amplify`. The orphaned `using-superpowers` skill is not included (the separate Claude plugin is unaffected). Terraform is bundled as portable skill files rather than a machine-specific symlink. Other older skills were retained, not automatically upgraded.
 
 This directory is exposed at:
 
@@ -116,6 +118,25 @@ node scripts/link-skills.mjs
 ```
 
 The script derives paths from its own repository location and the current user's home directory, so the checkout can live anywhere. It creates Windows junctions and Unix directory symlinks. It never replaces an existing real directory or a link with an unexpected target.
+
+## Claude Code Mod
+
+The local `cache-meter` mod is tracked under `claude/mods/cache-meter/`, including its tests and type declarations. It displays cache warmth/countdown, model/effort, cache-hit rate, token totals, and context usage above the prompt. Use `/cache-meter` to toggle it.
+
+Bootstrap links the mod and merges its path into Claude's `env.CLAUDE_CODE_PLUGIN_DIRS`. To configure only the mod:
+
+```bash
+node scripts/link-claude.mjs
+```
+
+Validate the linker and mod with:
+
+```bash
+node --test scripts/link-claude.test.mjs
+claude plugin test claude/mods/cache-meter
+```
+
+The linker preserves an existing local mod and unrelated settings, backs up settings before changing them, and does not copy credentials, sessions, or generated development-mod caches. Restart Claude Code afterwards. This requires a Claude Code build supporting local mods; the script does not install or upgrade Claude. Claude supplies the generated `.claude-plugin/types/` used by the mod's TypeScript configuration and the `claude-code/testing` test runner. Use `--skip claude` to opt out during bootstrap.
 
 ## Pi Configuration
 
