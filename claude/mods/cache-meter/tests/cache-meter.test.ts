@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { bar, contextColor, countdown, fmt, limitLabel, mode, modelName, parseBudget, usd } from '../hooks/register'
+import { bar, barSvg, contextColor, countdown, fmt, limitLabel, mode, modelName, parseBudget, usd } from '../hooks/register'
 
 test('formats tokens, countdowns and bars', async () => {
   expect(fmt(950)).toBe('950')
@@ -40,4 +40,26 @@ test('budget, limits and cost', async () => {
   expect(limitLabel('seven_day')).toBe('7d')
   expect(usd(4.123)).toBe('$4.12')
   expect(usd(212.6)).toBe('$213')
+})
+
+test('desktop bar is a rounded svg track', async () => {
+  const svg = barSvg(0.5, '#a6e3a1', 100, 6)
+  expect(svg).toContain('width="50"')
+  expect(svg).toContain('fill="#a6e3a1"')
+  expect(barSvg(0, '#a6e3a1')).not.toContain('#a6e3a1')
+})
+
+const BAND = {
+  component: 'AbovePrompt',
+  props: { hasSurvey: false, isWorking: false, maxRows: 10, bodyColumns: 120, scroll: { offset: 0, bodyRows: 9 }, view: {} },
+} as const
+
+test('desktop band draws pills and no powerline glyphs', async $ => {
+  const ui = await $.ui.mount({ plugin: 'cache-meter', surface: 'desktop', ...BAND } as never)
+  expect(await ui.find({ type: 'Svg' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /|/ })).toBeUndefined()
+  await ui.unmount()
+  const term = await $.ui.mount({ plugin: 'cache-meter', surface: 'terminal', ...BAND } as never)
+  expect(await term.find({ type: 'Text', text: // })).toBeDefined()
+  await term.unmount()
 })

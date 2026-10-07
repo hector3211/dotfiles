@@ -32,9 +32,10 @@ export const countdown = (ms: number): string => {
 export const modelName = (id: string): string => {
   const bare = id.replace(/\[[^\]]*\]/g, '').replace(/\([^)]*context[^)]*\)/gi, '').trim()
   const m = /^claude-([a-z]+)-(\d+)(?:-(\d+))?/i.exec(bare)
-  if (!m) return bare ? bare[0].toUpperCase() + bare.slice(1) : id
-  const family = m[1][0].toUpperCase() + m[1].slice(1)
-  return m[3] && m[3].length <= 2 ? `${family} ${m[2]}.${m[3]}` : `${family} ${m[2]}`
+  const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+  if (!m) return bare ? cap(bare) : id
+  const [, fam = '', major, minor] = m
+  return minor && minor.length <= 2 ? `${cap(fam)} ${major}.${minor}` : `${cap(fam)} ${major}`
 }
 
 /** Filled and empty runs of a thin line bar for a 0..1 fraction. */
@@ -73,6 +74,15 @@ export const limitColor = (pct: number): string => (pct >= 80 ? C.red : pct >= 5
 export const usd = (n: number): string => (n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`)
 
 export const contextColor = (pct: number): string => (pct >= 85 ? C.red : pct >= 60 ? C.yellow : C.green)
+
+/** A rounded progress track for the desktop, where box-drawing runs render unevenly. */
+export const barSvg = (fraction: number, color: string, width = 96, height = 6): string => {
+  const f = Math.min(1, Math.max(0, fraction))
+  const r = height / 2
+  const fill = f > 0 ? `<rect width="${Math.max(height, Math.round(f * width))}" height="${height}" rx="${r}" fill="${color}"/>` : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`
+    + `<rect width="${width}" height="${height}" rx="${r}" fill="${C.surface}"/>${fill}</svg>`
+}
 
 async function refresh($: EngineInterface, budget: number) {
   const usage = await $.session.usage()
@@ -160,6 +170,7 @@ export const register: Register = (on, options) => {
     }
 
     const { Box, Text } = $.ui.resolve(e)
+    const cols = e.props.bodyColumns
     const tot = await read($, totals)
     const last = await read($, lastRequestAt)
     const t = await read($, now)
@@ -187,9 +198,35 @@ export const register: Register = (on, options) => {
     const limitParts = lim.map(l => ({ text: `${limitLabel(l.kind)} ${Math.round(l.percentUsed)}% `, color: limitColor(l.percentUsed) }))
     const limitsWidth = limitParts.reduce((n, p) => n + p.text.length, 0)
 
+    // The desktop draws a proportional font with no Nerd Font glyphs:
+    // padded pills and an SVG bar instead of powerline separators.
+    if (e.surface === 'desktop') {
+      const { Svg } = $.ui.resolve(e)
+      const pill = (bg: string, fg: string, text: string, bold = false) => (
+        <Box backgroundColor={bg} paddingX={1} flexShrink={0}>
+          <Text wrap="truncate" color={fg} bold={bold}>{text}</Text>
+        </Box>
+      )
+      return (
+        <Box width={cols} height={1} justifyContent="space-between" alignItems="center" overflow="hidden">
+          <Box gap={1} alignItems="center" flexShrink={0}>
+            {pill(m.color, C.base, m.label, true)}
+            {pill(C.surface, C.text, timer)}
+            {pill(C.model, C.base, modelText.trim(), true)}
+            <Svg source={barSvg(pct / 100, ctxColor)} alt={`Context ${pct}% of budget`} width={96} height={6} />
+          </Box>
+          <Box gap={1} alignItems="center" flexShrink={0}>
+            <Text wrap="truncate" color={C.dim}>{hitText.trim()}</Text>
+            {limitParts.map(p => <Text wrap="truncate" color={p.color}>{p.text.trim()}</Text>)}
+            {pill(C.surface, C.text, totalText.trim())}
+            {pill(ctxColor, C.base, ctxText.trim(), true)}
+          </Box>
+        </Box>
+      )
+    }
+
     // Measure every block so nothing is squeezed: optional pieces drop out
     // least useful first, and the context bar takes whatever room is left.
-    const cols = e.props.bodyColumns
     const core = ` ${m.label} `.length + 1 + ` ${timer} `.length + 1 + modelText.length + 1 + 1 + ctxText.length + 1
     let showHit = true
     let showTotal = true
