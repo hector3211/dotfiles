@@ -61,7 +61,7 @@ export const mode = (left: number, ttlMs: number, hasRequests: boolean): Mode =>
 /** `250k` -> 250000. */
 export const parseBudget = (v: unknown): number => {
   const m = /^(\d+)k$/.exec(String(v ?? ''))
-  return m ? Number(m[1]) * 1_000 : 250_000
+  return m ? Number(m[1]) * 1_000 : 275_000
 }
 
 /** `five_hour` -> `5h`, `seven_day` -> `7d`, anything else keeps its name. */

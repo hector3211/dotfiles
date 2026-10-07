@@ -13,7 +13,7 @@
   "agent": {
     "build": {
       "model": "openai/gpt-5.6-sol",
-      "variant": "high"
+      "variant": "medium"
     },
     "grill-me": {
       "description": "Interviews me relentlessly to get a good understanding of what I want",
@@ -28,7 +28,13 @@
     },
     "plan": {
       "model": "openai/gpt-5.6-sol",
-      "variant": "high"
+      "variant": "high",
+      "permission": {
+        "submit_plan": "deny"
+      },
+      "tools": {
+        "submit_plan": false
+      }
     },
     "tdd-engineer": {
       "description": "Implements work using strict test-driven development",
@@ -86,5 +92,13 @@
       "*": "allow"
     }
   },
-  "plugin": ["speech-opencode", "opencode-ntfy.sh@1.1.0", "@plannotator/opencode@0.24.2"]
+  "plugin": [
+    "speech-opencode",
+    "opencode-ntfy.sh",
+    ["@plannotator/opencode@latest", {
+      "workflow": "plan-agent",
+      "planningAgents": ["grill-me"]
+    }],
+    "./plannotator-access.ts"
+  ]
 }

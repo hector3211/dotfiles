@@ -13,6 +13,7 @@ export interface AgentConfig {
 	name: string;
 	description: string;
 	tools?: string[];
+	runner?: "pi" | "opencode";
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
 	systemPrompt: string;
@@ -37,6 +38,7 @@ type AgentFrontmatter = {
 	name?: unknown;
 	description?: unknown;
 	tools?: unknown;
+	runner?: unknown;
 	model?: unknown;
 	thinking?: unknown;
 };
@@ -103,6 +105,7 @@ function loadAgentsFromDir(dir: string, source: "user" | "project"): AgentConfig
 			name: frontmatter.name,
 			description: frontmatter.description,
 			tools: parseToolList(frontmatter.tools),
+			runner: frontmatter.runner === "opencode" ? "opencode" : "pi",
 			model: typeof frontmatter.model === "string" ? frontmatter.model : undefined,
 			thinkingLevel: parseThinkingLevel(frontmatter.thinking),
 			systemPrompt: body,

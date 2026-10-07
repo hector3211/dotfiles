@@ -35,7 +35,7 @@ test('shortens model ids', async () => {
 
 test('budget, limits and cost', async () => {
   expect(parseBudget('250k')).toBe(250_000)
-  expect(parseBudget(undefined)).toBe(250_000)
+  expect(parseBudget(undefined)).toBe(275_000)
   expect(limitLabel('five_hour')).toBe('5h')
   expect(limitLabel('seven_day')).toBe('7d')
   expect(usd(4.123)).toBe('$4.12')

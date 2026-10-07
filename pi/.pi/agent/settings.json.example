@@ -4,6 +4,9 @@
     "npm:pi-web-access",
     "npm:@nicknisi/pi-cloak@0.1.2"
   ],
+  "skills": [
+    "-../../.agents/skills/terraform-skill/POWER.md"
+  ],
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
   "defaultThinkingLevel": "medium",

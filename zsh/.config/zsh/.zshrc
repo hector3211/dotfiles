@@ -8,6 +8,8 @@ alias zcon="nvim ~/.config/zsh/.zshrc"
 # nvim file shortcut
 alias ncon="nvim ~/.config/nvim"
 alias code="opencode"
+# Claude Code in auto mode (skip permission prompts)
+alias cld="claude --dangerously-skip-permissions"
 # Tmux colors
 # alias tmux="TERM=xterm-256color tmux"
 # Tmux file shortcut

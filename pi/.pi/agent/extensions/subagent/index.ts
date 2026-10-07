@@ -264,6 +264,104 @@ function getPiInvocation(args: string[]): { command: string; args: string[] } {
 
 type OnUpdateCallback = (partial: AgentToolResult<SubagentDetails>) => void;
 
+async function runOpenCodeAgent(
+	agent: AgentConfig,
+	task: string,
+	cwd: string,
+	model: string | undefined,
+	signal: AbortSignal | undefined,
+	currentResult: SingleResult,
+	emitUpdate: () => void,
+): Promise<SingleResult> {
+	const args = ["run", "--pure", "--format", "json", "--title", `Pi: ${agent.name}`];
+	if (model) args.push("--model", model);
+	const prompt = agent.systemPrompt.trim() ? `${agent.systemPrompt.trim()}\n\nTask: ${task}` : `Task: ${task}`;
+	args.push(prompt);
+
+	let output = "";
+	let wasAborted = false;
+	const exitCode = await new Promise<number>((resolve) => {
+		const proc = spawn("opencode", args, { cwd, shell: false, stdio: ["ignore", "pipe", "pipe"] });
+		let buffer = "";
+
+		const processLine = (line: string) => {
+			if (!line.trim()) return;
+			let event: any;
+			try {
+				event = JSON.parse(line);
+			} catch {
+				return;
+			}
+			if (event.type === "text" && typeof event.part?.text === "string") output += event.part.text;
+			if (event.type === "step_finish") {
+				const tokens = event.part?.tokens ?? {};
+				currentResult.usage.turns++;
+				currentResult.usage.input += tokens.input || 0;
+				currentResult.usage.output += tokens.output || 0;
+				currentResult.usage.cacheRead += tokens.cache?.read || 0;
+				currentResult.usage.cacheWrite += tokens.cache?.write || 0;
+				currentResult.usage.cost += event.part?.cost || 0;
+				currentResult.usage.contextTokens = tokens.total || 0;
+				currentResult.stopReason = event.part?.reason || "stop";
+			}
+		};
+
+		proc.stdout.on("data", (data) => {
+			buffer += data.toString();
+			const lines = buffer.split("\n");
+			buffer = lines.pop() || "";
+			for (const line of lines) processLine(line);
+		});
+		proc.stderr.on("data", (data) => {
+			currentResult.stderr += data.toString();
+		});
+		proc.on("close", (code) => {
+			if (buffer.trim()) processLine(buffer);
+			resolve(code ?? 0);
+		});
+		proc.on("error", (error) => {
+			currentResult.stderr += `${error.message}\n`;
+			resolve(1);
+		});
+
+		if (signal) {
+			const killProc = () => {
+				wasAborted = true;
+				proc.kill("SIGTERM");
+				setTimeout(() => {
+					if (!proc.killed) proc.kill("SIGKILL");
+				}, 5000);
+			};
+			if (signal.aborted) killProc();
+			else signal.addEventListener("abort", killProc, { once: true });
+		}
+	});
+
+	currentResult.exitCode = exitCode;
+	if (output) {
+		currentResult.messages.push({
+			role: "assistant",
+			content: [{ type: "text", text: output }],
+			api: "opencode",
+			provider: model?.split("/")[0] ?? "opencode",
+			model: model?.split("/").slice(1).join("/") ?? "unknown",
+			usage: {
+				input: currentResult.usage.input,
+				output: currentResult.usage.output,
+				cacheRead: currentResult.usage.cacheRead,
+				cacheWrite: currentResult.usage.cacheWrite,
+				totalTokens: currentResult.usage.contextTokens,
+				cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: currentResult.usage.cost },
+			},
+			stopReason: currentResult.stopReason ?? "stop",
+			timestamp: Date.now(),
+		} as Message);
+		emitUpdate();
+	}
+	if (wasAborted) throw new Error("Subagent was aborted");
+	return currentResult;
+}
+
 interface DispatchDefaults {
 	model?: string;
 	thinkingLevel?: ThinkingLevel;
@@ -327,6 +425,10 @@ async function runSingleAgent(
 			});
 		}
 	};
+
+	if (agent.runner === "opencode") {
+		return runOpenCodeAgent(agent, task, cwd ?? defaultCwd, model, signal, currentResult, emitUpdate);
+	}
 
 	try {
 		if (agent.systemPrompt.trim()) {

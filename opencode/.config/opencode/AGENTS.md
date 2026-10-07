@@ -22,3 +22,12 @@
 - Give each subagent one bounded objective, the minimum necessary context, explicit constraints, and an exact return format.
 - Launch independent subagent tasks in parallel. Do not duplicate their work in the primary agent.
 - Prefer the smallest capable model and agent. Escalate only when the result is incomplete or the task proves more complex.
+
+## Effect source of truth
+
+Use the current Effect v4 / effect-smol source, not memory or older Effect v2/v3 examples.
+
+1. If `.opencode/references/effect-smol` is missing, clone `https://github.com/Effect-TS/effect-smol` there. Do this in the project, not in the skill folder.
+2. Search `.opencode/references/effect-smol` for exact APIs, examples, tests, and naming patterns before answering or implementing Effect-specific code.
+3. Also inspect existing repo code for local house style before introducing new patterns.
+4. Prefer answers and implementations backed by specific source files or nearby repo examples.

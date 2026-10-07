@@ -1,8 +1,8 @@
 ---
 name: explore
-description: Fast, read-only code lookups and web research
-model: openai-codex/gpt-5.6-luna
-thinking: high
+description: Low-complexity, read-only code lookups, web fetches, and searches via OpenCode GLM 5.3 Flash
+runner: opencode
+model: opencode-go/glm-5.3-flash
 tools: read, grep, find, ls, web_search, fetch_content, get_search_content, source_check
 ---
 
