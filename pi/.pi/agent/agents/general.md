@@ -1,8 +1,8 @@
 ---
 name: general
-description: General research, analysis, and self-contained implementation tasks via GPT-6.1 Sol with high thinking
+description: General research, analysis, and self-contained implementation tasks via GPT-6 Luna with high thinking
 runner: pi
-model: openai-codex/gpt-6.1-sol
+model: openai-codex/gpt-6-luna
 thinking: high
 ---
 

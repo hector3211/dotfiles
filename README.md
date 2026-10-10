@@ -140,7 +140,7 @@ The linker preserves an existing local mod and unrelated settings, backs up sett
 
 ## Pi Configuration
 
-Portable Pi agents, prompt templates, and the subagent extension live under `pi/.pi/agent/`. The committed `settings.json.example` defaults to `openai-codex/gpt-5.6-sol` with medium thinking. The implementation, planning, review, security, TDD, and general subagents use `openai-codex/gpt-6.1-sol`. The `explore` subagent uses `openai-codex/gpt-6-luna` with medium thinking for fast read-only code and web lookups; `general` uses high thinking. Both run through Pi rather than OpenCode.
+Portable Pi agents, prompt templates, and the subagent extension live under `pi/.pi/agent/`. The committed `settings.json.example` defaults to `openai-codex/gpt-5.6-sol` with medium thinking. The implementation, planning, review, security, and TDD subagents use `openai-codex/gpt-6.1-sol`. The `explore` and `general` subagents use `openai-codex/gpt-6-luna`, with medium and high thinking respectively. Both run through Pi rather than OpenCode.
 
 Linux bootstrap runs the safe Pi resource linker automatically without linking the entire `~/.pi` directory. On Windows, or to configure only Pi, run:
 
