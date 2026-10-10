@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factory - Operations Board</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div class="brand-text">
+        <h1 class="brand-name">Factory</h1>
+        <p class="brand-sub">Operations board</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <label class="filter" for="project-filter">
+        <span class="filter-label">Project</span>
+        <select id="project-filter" class="filter-select">
+          <option value="all">All projects</option>
+        </select>
+      </label>
+      <span id="conn" class="conn conn-idle" role="status" aria-live="polite">
+        <span class="conn-dot" aria-hidden="true"></span>
+        <span id="conn-text">Connecting</span>
+      </span>
+    </div>
+  </div>
+  <div id="banner" class="banner" role="alert" hidden></div>
+</header>
+
+<main class="main">
+
+  <section id="needs" class="needs" aria-labelledby="needs-title" hidden>
+    <div class="needs-head">
+      <h2 id="needs-title" class="section-title">Needs you</h2>
+      <span id="needs-count" class="needs-count"></span>
+    </div>
+    <p class="needs-hint">These jobs are paused on a decision only you can make.</p>
+    <div id="needs-list" class="needs-list"></div>
+  </section>
+
+  <div id="empty" class="empty" hidden>
+    <h2 class="empty-title">Nothing on the factory floor</h2>
+    <p class="empty-lede">/factory turns a request into a finished, reviewed pull request.</p>
+    <p>Each job is planned, built in its own worktree, verified with your project's required
+    checks, and reviewed before it is marked ready. Queue work from your agent session and it
+    will appear on this board. Anything that needs a decision shows up in
+    <strong>Needs you</strong>.</p>
+  </div>
+
+  <div id="board" class="board" role="region" aria-label="Job board">
+    <section class="col" aria-labelledby="h-queued">
+      <header class="col-head">
+        <span class="col-dot dot-queued" aria-hidden="true"></span>
+        <h2 id="h-queued" class="col-title">Queued</h2>
+        <span class="col-count" id="count-queued">0</span>
+      </header>
+      <div class="col-list" id="list-queued"></div>
+    </section>
+
+    <section class="col" aria-labelledby="h-building">
+      <header class="col-head">
+        <span class="col-dot dot-building" aria-hidden="true"></span>
+        <h2 id="h-building" class="col-title">Building</h2>
+        <span class="col-count" id="count-building">0</span>
+      </header>
+      <div class="col-list" id="list-building"></div>
+    </section>
+
+    <section class="col" aria-labelledby="h-reviewing">
+      <header class="col-head">
+        <span class="col-dot dot-reviewing" aria-hidden="true"></span>
+        <h2 id="h-reviewing" class="col-title">Reviewing</h2>
+        <span class="col-count" id="count-reviewing">0</span>
+      </header>
+      <div class="col-list" id="list-reviewing"></div>
+    </section>
+
+    <section class="col" aria-labelledby="h-ready">
+      <header class="col-head">
+        <span class="col-dot dot-ready" aria-hidden="true"></span>
+        <h2 id="h-ready" class="col-title">Ready</h2>
+        <span class="col-count" id="count-ready">0</span>
+      </header>
+      <div class="col-list" id="list-ready"></div>
+    </section>
+  </div>
+
+  <section class="archive" aria-label="Inactive jobs">
+    <details class="archive-group" id="group-paused">
+      <summary class="archive-summary">
+        <span class="archive-chevron" aria-hidden="true"></span>
+        <span class="archive-label">Paused</span>
+        <span class="col-count" id="count-paused">0</span>
+      </summary>
+      <div class="archive-list" id="list-paused"></div>
+    </details>
+
+    <details class="archive-group" id="group-interrupted">
+      <summary class="archive-summary">
+        <span class="archive-chevron" aria-hidden="true"></span>
+        <span class="archive-label">Interrupted</span>
+        <span class="col-count" id="count-interrupted">0</span>
+      </summary>
+      <div class="archive-list" id="list-interrupted"></div>
+    </details>
+
+    <details class="archive-group" id="group-completed">
+      <summary class="archive-summary">
+        <span class="archive-chevron" aria-hidden="true"></span>
+        <span class="archive-label">Completed</span>
+        <span class="col-count" id="count-completed">0</span>
+      </summary>
+      <div class="archive-list" id="list-completed"></div>
+    </details>
+
+    <details class="archive-group" id="group-cancelled">
+      <summary class="archive-summary">
+        <span class="archive-chevron" aria-hidden="true"></span>
+        <span class="archive-label">Cancelled</span>
+        <span class="col-count" id="count-cancelled">0</span>
+      </summary>
+      <div class="archive-list" id="list-cancelled"></div>
+    </details>
+  </section>
+
+</main>
+
+<dialog id="detail" class="detail" aria-labelledby="detail-title">
+  <div id="detail-body" class="detail-scroll"></div>
+</dialog>
+
+<noscript>
+  <p style="padding:24px;font-family:sans-serif">The factory board needs JavaScript to connect to the local API.</p>
+</noscript>
+
+<script src="app.js"></script>
+</body>
+</html>

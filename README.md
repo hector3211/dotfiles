@@ -150,6 +150,18 @@ node scripts/link-pi.mjs
 
 The linker preserves an existing machine-local `~/.pi/agent/settings.json`, allowing platform-specific options such as Windows `shellPath`. If no settings file exists, it seeds one from the portable example. Authentication, sessions, installed packages, caches, logs, and generated model data are never linked into the repository.
 
+## Software Factory
+
+The shared local factory lives under `agents/.agents/factory/` and is linked as `~/.agents/factory`. It provides `/factory` adapters for Pi, OpenCode, and Claude Code, a shared skill for T3 Code's Codex/Claude providers, isolated feature worktrees, autonomous verification/repair, and a localhost HTML dashboard. All existing skills remain untouched.
+
+Linux bootstrap installs the links. To install only the factory on Linux or Windows (Node.js 24+ and Git required):
+
+```bash
+node agents/.agents/factory/install.mjs
+```
+
+Reload your agent client, then run `/factory help` or `/factory <feature>` inside a trusted Git repository. Work mode requires a human merge; personal mode can merge under explicit policy. Per-project `.factory/` records are ignored, and runtime state stays outside dotfiles. See [factory documentation](agents/.agents/factory/README.md) for permissions, current limitations, and tests. Use `--skip factory` to opt out during bootstrap.
+
 ## OpenCode Config
 
 `bootstrap.sh` seeds `~/.config/opencode/opencode.json` from `opencode/.config/opencode/opencode.json.example` only when the real config file does not already exist.

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Factory"
+  short_description: "Autonomous feature jobs, reviews, and worktrees"
+  default_prompt: "Use $factory to start or manage a feature job."
+policy:
+  allow_implicit_invocation: false

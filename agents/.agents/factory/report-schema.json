@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings", "spec", "checks", "decision"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["pass", "changes", "blocked"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "explanation", "location", "suggestedFix"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocking", "warning", "info"] },
+          "explanation": { "type": "string" },
+          "location": { "type": ["string", "null"] },
+          "suggestedFix": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "spec": { "type": ["string", "null"] },
+    "checks": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "command"],
+        "properties": { "name": { "type": "string" }, "command": { "type": "string" } }
+      }
+    },
+    "decision": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["blockedOn", "alreadyTried", "recommendation", "needFromYou"],
+      "properties": {
+        "blockedOn": { "type": "string" },
+        "alreadyTried": { "type": "array", "items": { "type": "string" } },
+        "recommendation": { "type": "string" },
+        "needFromYou": { "type": "string" }
+      }
+    }
+  }
+}
