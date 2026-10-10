@@ -73,6 +73,12 @@ export const limitColor = (pct: number): string => (pct >= 80 ? C.red : pct >= 5
 
 export const usd = (n: number): string => (n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2)}`)
 
+/** `290k` -> 290000; `off` (or anything unreadable) -> null. */
+export const parseCompactAt = (v: unknown): number | null => {
+  const m = /^(\d+)k$/.exec(String(v ?? '290k'))
+  return m ? Number(m[1]) * 1_000 : null
+}
+
 export const contextColor = (pct: number): string => (pct >= 85 ? C.red : pct >= 60 ? C.yellow : C.green)
 
 /** A rounded progress track for the desktop, where box-drawing runs render unevenly. */
@@ -99,26 +105,69 @@ async function refresh($: EngineInterface, budget: number) {
 
   // One nudge per crossing; a /compact that drops below the budget re-arms it.
   const isOver = ctx !== null && ctx.tokens >= Math.min(budget, ctx.window)
-  const nudged = await read($, hasNudged)
-  if (isOver && !nudged) {
+  let notify = false
+  await update($, hasNudged, nudged => {
+    notify = isOver && !nudged
+    // An unavailable reading is not evidence that compaction lowered context.
+    return ctx === null ? nudged : isOver
+  })
+  if (notify && ctx) {
     $.ui.toast(`Context at ${fmt(ctx.tokens)}, past ${fmt(budget)}. Run /compact.`)
-    await update($, hasNudged, () => true)
-  } else if (!isOver && nudged) {
-    await update($, hasNudged, () => false)
+  }
+}
+
+type RefreshState = { pending: Promise<void> }
+
+function refreshUsage($: EngineInterface, budget: number, state: RefreshState) {
+  state.pending = state.pending.catch(() => {}).then(() => refresh($, budget))
+  return state.pending
+}
+
+type CompactState = { armed: boolean; running: boolean; announced: boolean }
+
+async function autoCompact($: EngineInterface, at: number | null, state: CompactState) {
+  if (at === null || state.running) return
+  state.running = true
+  try {
+    const tokens = (await read($, context))?.tokens
+    if (tokens === undefined) return
+    if (tokens < at) {
+      state.announced = false
+      return
+    }
+    if (!state.armed) return
+    state.armed = false
+    if (!state.announced) {
+      state.announced = true
+      $.ui.toast(`Context at ${fmt(tokens)}, past ${fmt(at)}. Compacting…`)
+    }
+    try {
+      const result = await $.session.compact()
+      if ('skip' in result && result.skip) $.ui.toast(`Auto-compact skipped: ${result.skip}`)
+    } catch {
+      // Retry when idle, without repeating the announcement.
+      state.armed = true
+    }
+  } finally {
+    state.running = false
   }
 }
 
 export const register: Register = (on, options) => {
   const ttlMs = options.cacheTtl === '5m' ? 5 * 60_000 : 60 * 60_000
   const budget = parseBudget(options.contextBudget)
+  const compactAt = parseCompactAt(options.autoCompactAt)
+  const compactState: CompactState = { armed: false, running: false, announced: false }
+  // Timer and turn completion can refresh concurrently; serialize state updates.
+  const refreshState: RefreshState = { pending: Promise.resolve() }
 
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     // Earlier versions wrote a status line; clear what they left behind.
     $.ui.status(undefined)
-    $.clock.every(1000, () => void refresh($, budget))
+    $.clock.every(1000, () => void refreshUsage($, budget, refreshState).then(() => autoCompact($, compactAt, compactState)).catch(() => {}))
     $.command.register({ name: 'cache-meter', description: 'Toggle the cache line' })
-    await refresh($, budget)
+    await refreshUsage($, budget, refreshState)
     return result
   })
 
@@ -148,16 +197,20 @@ export const register: Register = (on, options) => {
       }))
       // Only the main loop's requests keep the main cache warm.
       if (e.agentId === undefined) {
+        compactState.armed = true
         const t = await $.clock.now()
         await update($, lastRequestAt, () => t)
       }
     }
-    await refresh($, budget)
+    await refreshUsage($, budget, refreshState)
     return result
   })
 
   on('session.end', async ($, e, next) => {
     if (e.reason === 'clear') {
+      compactState.armed = false
+      compactState.announced = false
+      await update($, hasNudged, () => false)
       await update($, totals, () => ZERO)
       await update($, lastRequestAt, () => null)
     }

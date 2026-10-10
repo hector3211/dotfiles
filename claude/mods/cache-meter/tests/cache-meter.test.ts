@@ -1,6 +1,6 @@
-import { expect, test } from 'claude-code/testing'
+import { expect, mock, test } from 'claude-code/testing'
 
-import { bar, barSvg, contextColor, countdown, fmt, limitLabel, mode, modelName, parseBudget, usd } from '../hooks/register'
+import { bar, barSvg, contextColor, countdown, fmt, limitLabel, mode, modelName, parseBudget, parseCompactAt, usd } from '../hooks/register'
 
 test('formats tokens, countdowns and bars', async () => {
   expect(fmt(950)).toBe('950')
@@ -62,4 +62,65 @@ test('desktop band draws pills and no powerline glyphs', async $ => {
   const term = await $.ui.mount({ plugin: 'cache-meter', surface: 'terminal', ...BAND } as never)
   expect(await term.find({ type: 'Text', text: // })).toBeDefined()
   await term.unmount()
+})
+
+test('busy compaction retries silently and compacts once idle', async ($, on) => {
+  const clock = mock.clock(on)
+  const toasts: string[] = []
+  let attempts = 0
+  let busy = true
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 300_000, window: 1_000_000 }, rateLimits: [] } }))
+  on('session.model', () => ({ value: 'opus' }))
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.status', () => ({ value: undefined }))
+  on('command.register', () => ({ value: undefined }))
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  on('session.compact', () => {
+    attempts++
+    if (busy) throw new Error('A turn is running')
+    return { skip: 'test finished' }
+  })
+  await $.session.start({ cwd: '/tmp', surface: null, isInteractive: false })
+  await $.turn.complete({
+    turnId: 'main', reason: 'answer', answer: '', durationMs: 0, isAborted: false,
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+  await clock.advance(3_000)
+  expect(attempts).toBe(3)
+  expect(toasts.filter(t => t.includes('Compacting')).length).toBe(1)
+  busy = false
+  await clock.advance(3_000)
+  expect(attempts).toBe(4)
+  expect(toasts.filter(t => t.includes('Compacting')).length).toBe(1)
+})
+
+test('missing context does not re-arm the budget toast', { options: { autoCompactAt: 'off' } }, async ($, on) => {
+  const clock = mock.clock(on)
+  const toasts: string[] = []
+  let tokens: number | undefined = 300_000
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens, window: 1_000_000 }, rateLimits: [] } }))
+  on('session.model', () => ({ value: 'opus' }))
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('ui.status', () => ({ value: undefined }))
+  on('command.register', () => ({ value: undefined }))
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  await $.session.start({ cwd: '/tmp', surface: null, isInteractive: false })
+  await clock.advance(1_000)
+  tokens = undefined
+  await clock.advance(1_000)
+  tokens = 300_000
+  await clock.advance(2_000)
+  expect(toasts.length).toBe(1)
+  tokens = 100_000
+  await clock.advance(1_000)
+  tokens = 300_000
+  await clock.advance(1_000)
+  expect(toasts.length).toBe(2)
+})
+
+test('auto-compact threshold', async () => {
+  expect(parseCompactAt('290k')).toBe(290_000)
+  expect(parseCompactAt(undefined)).toBe(290_000)
+  expect(parseCompactAt('off')).toBe(null)
 })

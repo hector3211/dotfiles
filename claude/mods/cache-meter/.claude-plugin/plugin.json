@@ -27,6 +27,13 @@
         "400k"
       ],
       "default": "275k"
+    },
+    "autoCompactAt": {
+      "type": "string",
+      "title": "Auto-compact at",
+      "description": "Compact the conversation between turns once context reaches this many tokens",
+      "options": ["off", "250k", "275k", "290k", "300k", "350k", "400k"],
+      "default": "290k"
     }
   }
 }

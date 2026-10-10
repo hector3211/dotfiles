@@ -119,11 +119,14 @@ node scripts/link-skills.mjs
 
 The script derives paths from its own repository location and the current user's home directory, so the checkout can live anywhere. It creates Windows junctions and Unix directory symlinks. It never replaces an existing real directory or a link with an unexpected target.
 
-## Claude Code Mod
+## Claude Code Mods
 
-The local `cache-meter` mod is tracked under `claude/mods/cache-meter/`, including its tests and type declarations. It displays cache warmth/countdown, model/effort, cache-hit rate, token totals, and context usage above the prompt. Use `/cache-meter` to toggle it.
+The local mods are tracked under `claude/mods/`:
 
-Bootstrap links the mod and merges its path into Claude's `env.CLAUDE_CODE_PLUGIN_DIRS`. To configure only the mod:
+- **`cache-meter`**: cache warmth/countdown, model/effort, cache-hit rate, token totals, and context usage above the prompt, with terminal and Desktop layouts. `/cache-meter` toggles it. Configurable auto-compaction defaults to 290k context tokens, retries while busy, and avoids repeated notifications.
+- **`ticket-timer`**: `/ticket <number>` starts a ConnectWise ticket clock; `pause`, `resume`, and `stop` manage it. Stopping returns rounded billable hours and a generated time-entry note. See [ticket-timer documentation](claude/mods/ticket-timer/README.md) for persistence and prompt capture.
+
+Bootstrap links both mods and merges their paths into Claude's `env.CLAUDE_CODE_PLUGIN_DIRS`. To configure only the mods:
 
 ```bash
 node scripts/link-claude.mjs
@@ -134,9 +137,10 @@ Validate the linker and mod with:
 ```bash
 node --test scripts/link-claude.test.mjs
 claude plugin test claude/mods/cache-meter
+claude plugin test claude/mods/ticket-timer
 ```
 
-The linker preserves an existing local mod and unrelated settings, backs up settings before changing them, and does not copy credentials, sessions, or generated development-mod caches. Restart Claude Code afterwards. This requires a Claude Code build supporting local mods; the script does not install or upgrade Claude. Claude supplies the generated `.claude-plugin/types/` used by the mod's TypeScript configuration and the `claude-code/testing` test runner. Use `--skip claude` to opt out during bootstrap.
+The linker preserves existing local mods and unrelated settings, backs up settings before changing them, and does not copy credentials, sessions, or generated development-mod caches. Restart Claude Code afterwards. This requires a Claude Code build supporting local mods; the script does not install or upgrade Claude. Claude supplies the generated `.claude-plugin/types/` used by the mod's TypeScript configuration and the `claude-code/testing` test runner. Use `--skip claude` to opt out during bootstrap.
 
 ## Pi Configuration
 

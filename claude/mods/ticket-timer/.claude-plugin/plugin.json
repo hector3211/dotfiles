@@ -1,0 +1,5 @@
+{
+  "name": "ticket-timer",
+  "version": "0.1.0",
+  "description": "Time a ConnectWise ticket from the prompt: /ticket <number> starts, pause/resume, stop gives the hours and a time-entry note"
+}
