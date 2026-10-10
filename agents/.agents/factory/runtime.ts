@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import { Store, git, jobDir, readJSON } from './store.ts';
+import { Store, atomic, git, jobDir, readJSON } from './store.ts';
+import { workspace, newProject, saveDraft, loadDraft } from './workspace.ts';
 import { Pipeline, gh } from './pipeline.ts';
 import { processIdentity, terminateTree } from './process.ts';
 import type { AgentRunner, Config, Job } from './types.ts';
@@ -89,12 +90,38 @@ export class Runtime {
       }
     } finally { this.ticking = false; }
   }
-  async command(args: { action: string; cwd?: string; id?: string; description?: string; answer?: string; key?: string; value?: unknown; runtime?: Config['runtime']; model?: string; issue?: string }) {
+  async command(args: { action: string; cwd?: string; id?: string; description?: string; answer?: string; key?: string; value?: unknown; runtime?: Config['runtime']; model?: string; issue?: string; name?: string; repository?: string }) {
+    if (args.action === 'plan') {
+      if (!args.cwd) throw new Error('Workspace directory required');
+      return saveDraft(this.store.stateDir, args.cwd, args.description || '');
+    }
+    if (args.action === 'new') {
+      if (!args.cwd || !args.description?.trim()) throw new Error('Use /factory new <directory-name> <feature description>');
+      const project = await newProject(args.cwd, args.name || '');
+      return this.command({ ...args, action: 'start', cwd: project });
+    }
+    if (args.action === 'attach') {
+      if (!args.cwd || !args.repository) throw new Error('Use /factory attach <draft-id> <repository-path>');
+      const draft = await loadDraft(this.store.stateDir, args.id || '');
+      const selected = await workspace(path.resolve(args.cwd, args.repository));
+      if (!selected.project) throw new Error('Attach requires a project repository, not a workspace');
+      if (draft.attachmentProject && draft.attachmentProject !== selected.project) throw new Error('Attachment already started in another repository; retry with that repository');
+      const draftFile = path.join(this.store.stateDir, 'drafts', `${draft.id}.json`);
+      draft.attachmentProject = selected.project;
+      await atomic(draftFile, draft);
+      const project = await this.store.register(selected.project);
+      const job = await this.store.create(project, draft.description.slice(0, 500), draft.description, undefined, args.model, args.runtime, `draft-${draft.id}`);
+      draft.attachedJob = job.id;
+      await atomic(draftFile, draft);
+      this.onChange(); return job;
+    }
     if (args.action === 'status') return this.store.list();
     if (args.action === 'inspect') return this.store.detail(await this.store.resolve(args.id || ''));
     if (args.action === 'start' || args.action === 'issue' || args.action === 'config') {
       if (!args.cwd) throw new Error('Project directory required');
-      const project = await this.store.register(args.cwd);
+      const selected = await workspace(args.cwd);
+      if (!selected.project) return selected;
+      const project = await this.store.register(selected.project);
       if (args.action === 'config') {
         if (args.key) {
           const config = await this.store.configure(project, args.key, args.value);

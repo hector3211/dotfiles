@@ -6,7 +6,7 @@
   "description": "Local-first multi-agent feature delivery shared by pi, OpenCode, Claude Code and T3 Code",
   "engines": { "node": ">=24" },
   "scripts": {
-    "test": "node --test factory.test.ts adapters.test.ts dashboard.browser.test.mjs",
+    "test": "node --test factory.test.ts adapters.test.ts workspace.test.ts dashboard.browser.test.mjs",
     "install:links": "node install.mjs",
     "dashboard": "node cli.ts dashboard"
   }

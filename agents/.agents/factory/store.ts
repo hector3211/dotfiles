@@ -117,17 +117,28 @@ export class Store {
     const event: Event = { at: job.updatedAt, type, message: job.activity };
     await fs.appendFile(path.join(jobDir(job), 'events.jsonl'), JSON.stringify(event) + '\n', { mode: 0o600 });
   }
-  async create(project: string, title: string, request = title, issue?: string, model?: string, runtime?: Config['runtime']): Promise<Job> {
+  async create(project: string, title: string, request = title, issue?: string, model?: string, runtime?: Config['runtime'], stableId?: string): Promise<Job> {
     if (!title.trim() || title.length > 500 || request.length > 100_000) throw new Error('Feature request is empty or too large');
+    if (stableId) {
+      if (!/^draft-[a-f0-9-]{36}$/.test(stableId)) throw new Error('Invalid stable job ID');
+      const existingFile = path.join(project, '.factory', 'jobs', stableId, 'job.json');
+      if (await exists(existingFile)) {
+        const existing = await readJSON<Job>(existingFile);
+        if (existing.project !== project || existing.request !== request) throw new Error('Stable job identity mismatch');
+        return existing;
+      }
+    }
     const config = await this.config(project);
     if (model && !config.model) config.model = model;
     if (!config.runtime) config.runtime = runtime || 'pi';
     validateConfig(config);
     // Remember detected caller/model once; later policy is stable and shared by every host.
     await atomic(path.join(project, '.factory', 'config.json'), config);
-    const baseSha = await git(project, ['rev-parse', `${config.targetBranch}^{commit}`]);
+    const baseSha = await git(project, ['rev-parse', '--verify', `${config.targetBranch}^{commit}`]).catch(() => {
+      throw new Error(`Target branch "${config.targetBranch}" has no local commit. Create its initial commit, or use /factory config targetBranch <existing-local-branch>. For a new project, use /factory new <name> <feature>.`);
+    });
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 45) || 'feature';
-    const id = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}-${slug}`;
+    const id = stableId || `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}-${slug}`;
     const now = new Date().toISOString();
     const job: Job = { id, title, request, project, projectName: path.basename(project), branch: `factory/${id}`,
       worktree: path.join(project, '.factory', 'worktrees', id), baseSha, targetBranch: config.targetBranch,

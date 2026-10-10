@@ -47,6 +47,9 @@ export function parseCommand(text: string, cwd: string, runtime?: string, model?
   if (['status', 'dashboard'].includes(verb)) return { ...common, action: verb };
   if (['inspect', 'pause', 'resume', 'cancel'].includes(verb)) return { ...common, action: verb, id: tail };
   if (verb === 'answer') return { ...common, action: 'answer', id: rest[0], answer: rest.slice(1).join(' ') };
+  if (verb === 'plan') return { ...common, action: 'plan', description: tail };
+  if (verb === 'new') return { ...common, action: 'new', name: rest[0], description: rest.slice(1).join(' ') };
+  if (verb === 'attach') return { ...common, action: 'attach', id: rest[0], repository: rest.slice(1).join(' ') };
   if (verb === 'issue') return { ...common, action: 'issue', issue: tail };
   if (verb === 'config') {
     if (!tail) return { ...common, action: 'config' };
@@ -62,4 +65,4 @@ export function parseCommand(text: string, cwd: string, runtime?: string, model?
   }
   return { ...common, action: 'start', description: text.trim() };
 }
-export const help = `/factory <feature description>\n/factory issue #123\n/factory status | dashboard | inspect <id>\n/factory pause | resume | cancel <id>\n/factory answer <id> <response>\n/factory config\n/factory config profile work|personal\n/factory config runtime pi|opencode|claude|codex\n/factory config publish true|false\n\nWork: human-only merging. Personal: eligible PRs can merge automatically.\nPR publication is opt-in once per project. Existing skills remain untouched.`;
+export const help = `/factory <feature description>\n/factory new <directory-name> <feature description>\n/factory plan <request> (save draft; no workers)\n/factory attach <draft-id> <repository-path>\n/factory issue #123\n/factory status | dashboard | inspect <id>\n/factory pause | resume | cancel <id>\n/factory answer <id> <response>\n/factory config\n/factory config profile work|personal\n/factory config runtime pi|opencode|claude|codex\n/factory config publish true|false\n\nWork: human-only merging. Personal: eligible PRs can merge automatically.\nPR publication is opt-in once per project. Existing skills remain untouched.`;

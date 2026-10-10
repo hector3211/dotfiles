@@ -16,7 +16,7 @@ Reload pi (`/reload`) or restart OpenCode/Claude Code to discover `/factory`. Li
 
 The optional terminal launcher is `~/.local/bin/factory` on Linux and `%USERPROFILE%\.local\bin\factory.cmd` on Windows; add that directory to PATH if desired. Slash commands do not require that PATH change.
 
-## Use in any trusted Git project
+## Use in any trusted workspace
 
 ```text
 /factory Add CSV invoice exports
@@ -30,6 +30,16 @@ The optional terminal launcher is `~/.local/bin/factory` on Linux and `%USERPROF
 /factory answer <id> Exclude customer emails
 /factory config
 ```
+
+You can start in a workspace directory. Pi offers a picker for its immediate child repositories, **New project**, or **Plan only**. A parent home-directory repository is never silently inherited. Other hosts receive a structured `needsSelection` response; rerun the CLI with `--cwd <project>` or use the explicit commands below. Repository subdirectories still resolve to their project root.
+
+```text
+/factory new my-app Build an invoice application
+/factory plan Explore invoice exports
+/factory attach <draft-id> <repository-path>
+```
+
+`new` creates a new child directory, initializes `main`, and makes an empty initial commit before queuing normal isolated work. It refuses existing directories and never stages your files. `plan` saves a Git-free request draft in the global state directory; it does **not** launch planning workers yet. `attach` queues that saved request against a repository exactly once. Drafts are not job cards until attached. A repository with no commits needs an explicit initial commit; Factory will not commit existing files for you.
 
 The first feature detects the invoking host and remembers it as the worker runtime. Pi also passes its selected model. OpenCode and Claude workers initially use their own default model. Every host can subsequently manage those same jobs. Slash-command arguments are passed through a small host adapter; Claude/OpenCode adapters use their agent to dispatch the CLI, while pi registers a native command.
 
@@ -136,7 +146,7 @@ Reports are rendered as text, never executed HTML. Requests validate localhost h
 ## Verification
 
 ```text
-node --test factory.test.ts adapters.test.ts
+node --test factory.test.ts adapters.test.ts workspace.test.ts
 ```
 
 Optional browser test, without adding a runtime dependency:

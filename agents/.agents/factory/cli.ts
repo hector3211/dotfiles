@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import path from 'node:path';
 import { callFactory, ensureDaemon, help, parseCommand } from './client.ts';
 
 export function openBrowser(url: string) {
@@ -19,12 +20,12 @@ for (const option of ['--caller', '--worker', '--model', '--cwd']) {
   }
 }
 try {
-  const args = parseCommand(words.join(' '), cwd, caller, model, worker);
+  const args = parseCommand(words.join(' '), path.resolve(cwd), caller, model, worker);
   if (args.action === 'help') console.log(help);
   else if (args.action === 'dashboard') { const d = await ensureDaemon(); openBrowser(d.url); console.log(d.url); }
   else {
     const result = await callFactory(args);
     console.log(JSON.stringify(result, null, 2));
-    if (args.action === 'start' || args.action === 'issue') { const d = await ensureDaemon(); console.log(`\nDashboard: ${d.url}`); openBrowser(d.url); }
+    if (['start', 'issue', 'new', 'attach'].includes(String(args.action)) && !(result as { needsSelection?: boolean }).needsSelection) { const d = await ensureDaemon(); console.log(`\nDashboard: ${d.url}`); openBrowser(d.url); }
   }
 } catch (error) { console.error(error instanceof Error ? error.message : String(error)); process.exitCode = 1; }
