@@ -49,6 +49,25 @@ test('progress, documents and supporting artifacts are durable and explicit', as
   await assert.rejects(runtime.store.artifact(detail.job, '../../outside.log'), /not available/);
 });
 
+test('before/after proof artifacts survive verification reports and reloads', async t => {
+  const { runtime, job } = await fixture(t);
+  const before = 'Scenario: keyboard navigation\nBefore: focus cannot reach menu\n';
+  const after = 'Scenario: keyboard navigation\nAfter: focus reaches menu and Escape closes it\n';
+  const proof = '# Proof (storage-test fixture)\n\n| Before | After |\n| --- | --- |\n| before-001.log | after-001.log |\n\nSynthetic fixture data; not evidence of a real UI change.\n';
+  await runtime.command({ action: 'artifact', id: job.id, name: 'before-001.log', content: before });
+  await runtime.command({ action: 'report', id: job.id, stage: 'build', state: 'building', activity: 'Implementing after recording the baseline' });
+  await runtime.command({ action: 'artifact', id: job.id, name: 'after-001.log', content: after });
+  await runtime.command({ action: 'artifact', id: job.id, name: 'proof-001.md', content: proof });
+  await runtime.command({ action: 'report', id: job.id, stage: 'verify', lastSummary: 'Agent-reported comparison: artifacts/proof-001.md' });
+  const reloaded = new ObserverRuntime(runtime.store.stateDir); await reloaded.init();
+  const detail = await reloaded.store.detail(await reloaded.store.resolve(job.id));
+  assert.deepEqual([...detail.artifacts].sort(), ['artifacts/after-001.log', 'artifacts/before-001.log', 'artifacts/proof-001.md']);
+  assert.equal(await reloaded.store.artifact(detail.job as Observation, 'artifacts/before-001.log'), before);
+  assert.equal(await reloaded.store.artifact(detail.job as Observation, 'artifacts/after-001.log'), after);
+  assert.equal(await reloaded.store.artifact(detail.job as Observation, 'artifacts/proof-001.md'), proof);
+  assert.equal(detail.job.evidence, undefined, 'storing a proof report does not certify it');
+});
+
 test('pause, resume and cancel remain requests until an agent acknowledges', async t => {
   const { runtime, job } = await fixture(t);
   await runtime.command({ action: 'report', id: job.id, state: 'building', stage: 'build', activity: 'Working' });

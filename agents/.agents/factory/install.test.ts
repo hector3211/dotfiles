@@ -19,5 +19,15 @@ test('installation is repeatable and preserves unrelated skills', async t => {
   assert.match(await fs.readFile(path.join(home, '.claude', 'commands', 'factory.md'), 'utf8'), /current.*agent|current.*session/s);
   assert.match(await fs.readFile(path.join(home, '.config', 'opencode', 'commands', 'factory.md'), 'utf8'), /SKILL\.md/);
   assert.equal(await fs.readFile(sentinel, 'utf8'), 'Leave existing skills untouched');
+  const factorySkill = await fs.readFile(path.join(home, '.agents', 'skills', 'factory', 'SKILL.md'), 'utf8');
+  assert.match(factorySkill, /## Prove/);
+  assert.match(factorySkill, /evidence-driven-testing/);
+  assert.match(factorySkill, /PROVE\.md/);
+  assert.match(factorySkill, /Capture the before state/);
+  assert.ok(factorySkill.indexOf('Capture the before') < factorySkill.indexOf('## Work loop'), 'baseline capture must precede implementation instructions');
+  const proofGuide = await fs.readFile(path.join(home, '.agents', 'skills', 'factory', 'PROVE.md'), 'utf8');
+  assert.match(proofGuide, /before-001\.log/);
+  assert.match(proofGuide, /after-001\.log/);
+  assert.match(proofGuide, /proof-001\.md/);
   for (const root of ['.agents', '.claude']) assert.equal(await fs.realpath(path.join(home, root, 'skills', 'factory')), await fs.realpath(path.join(import.meta.dirname, 'skill')));
 });

@@ -40,6 +40,12 @@ Reports can also include `checks: [{ "name":"tests", "command":"npm test", "stat
 
 Report before and after each stage, and check controls between stages. Dashboard inactivity is not evidence of process state. Never claim live tool logs or exact cost; the helper does not report them.
 
+## Prove: before and after
+
+Factory follows [the bundled Prove guide](skill/PROVE.md): capture the baseline while reproducing the issue **before implementation**, then re-run the same scenario after the change and run applicable repo checks. An installed `/evidence-driven-testing` skill can supplement it; no additional skill or screenshot package is required.
+
+Preserve numbered `before-001.log`/`.json`, `after-001.log`/`.json`, and `proof-001.md` artifacts. For visual work, compare focused screenshots at matching viewports and exercise the affected interactions; keep screenshots/traces local and reference their exact paths in the Markdown summary. The current dashboard exposes text artifacts, not binary image previews. Public uploads, extra installs, production mutations and PR-body edits require explicit permission. Missing or inconclusive evidence is reported as a gap, not a pass.
+
 ## Workspace, safety, and delivery
 
 The agent chooses the target repository with the user when ambiguous. It must not infer a repo from the home directory or stage unrelated changes. Repository initialization requires explicit user choice; the agent explains whether it will reuse the selected workspace or isolate changes in a worktree. Run project-appropriate tests, inspect all changes, conduct an independent review, fix issues, and report evidence. Commit or push only with explicit user authorization; never merge automatically.
