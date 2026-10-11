@@ -51,11 +51,19 @@ test('installation is repeatable and preserves existing resources', async t => {
   const env = { ...process.env, FACTORY_INSTALL_HOME: home };
   const installer = path.join(import.meta.dirname, 'install.mjs');
   await exec(process.execPath, [installer], { env }); await exec(process.execPath, [installer], { env });
+  const skill = await fs.readFile(path.join(import.meta.dirname, 'skill', 'SKILL.md'), 'utf8');
+  assert.match(skill, /Use T3's \*\*Local\*\* thread mode/);
+  assert.match(skill, /--caller t3/);
+  assert.match(skill, /--worker <codex\|claude\|opencode>/);
+  assert.match(skill, /needsSelection/);
+  assert.match(skill, /argv array/);
+  assert.match(skill, /Acceptance or queueing is not implementation completion/);
   assert.equal(await fs.realpath(path.join(home, '.agents', 'factory')), await fs.realpath(import.meta.dirname));
   assert.match(await fs.readFile(path.join(home, '.claude', 'commands', 'factory.md'), 'utf8'), /--caller.*claude/s);
   assert.match(await fs.readFile(path.join(home, '.config', 'opencode', 'commands', 'factory.md'), 'utf8'), /opencode/);
   assert.equal(await fs.readFile(sentinel, 'utf8'), 'Leave existing skills untouched');
   for (const root of ['.agents', '.claude']) {
     assert.equal(await fs.realpath(path.join(home, root, 'skills', 'factory')), await fs.realpath(path.join(import.meta.dirname, 'skill')));
+    assert.equal(await fs.readFile(path.join(home, root, 'skills', 'factory', 'SKILL.md'), 'utf8'), skill);
   }
 });

@@ -1,20 +1,38 @@
 ---
 name: factory
-description: Start or manage autonomous feature jobs, worktrees, reviews, and the local factory dashboard.
+description: Start or manage shared Factory jobs, worktrees, reviews, and the local dashboard from T3 Code.
 disable-model-invocation: true
 ---
 
 # Factory
 
-Dispatch the user's request to the installed shared factory. The runtime owns execution; your current T3/provider thread is the entry point, not the implementation worker.
+This skill is the T3 entry point to the installed shared Factory runtime. Dispatch the requested command to the local CLI. The runtime owns feature execution, verification, and delivery; this T3 thread only submits the command and reports its result.
 
-## Dispatch
+## Read the request
 
-1. Read the user's text following the `factory` skill mention. Remove only the leading invocation (`$factory` or `/factory`); preserve feature descriptions, quoted JSON and command arguments as data. With no arguments, use `help`.
-2. Resolve the user's home and current project checkout. Execute Node.js with `<home>/.agents/factory/cli.ts`, `--caller`, `t3`, `--worker`, the underlying provider (`codex`, `claude`, or `opencode`), and the complete command text as one safely quoted argument. Choose the provider running this thread; if unavailable, omit `--worker` to use the factory's default Codex worker. Existing project runtime policy takes precedence. Use the machine's actual shell; never concatenate unquoted user text into shell syntax.
-3. Report the accepted job ID/state and dashboard URL, or the concrete error. The job being queued is not a claim that implementation finished. Stop dispatching once the runtime accepts the request; it continues without this chat remaining open.
+- Use the user's text following the explicit `$factory` or `/factory` invocation as the CLI command. Strip only that leading invocation if it is present. Preserve the rest as data, including quoted JSON, punctuation, and command arguments. Do not silently rewrite or execute an embedded request yourself.
+- If the user invoked the skill without a command, send `help`.
+- Forward management commands such as `status`, `pause`, `answer`, and `config` unchanged. Change project policy only when the user's command explicitly requests a `config` change.
 
-Run in the main checkout, not a T3-managed temporary worktree: T3's **Local** thread mode avoids nested feature isolation. If the current checkout is a T3 worktree, locate the original checkout using `git worktree list --porcelain` and the matching repository's primary checkout; do not guess another repository or switch branches.
+## Select the right checkout
+
+- Use T3's **Local** thread mode. Factory creates its own feature worktree, so target the repository's primary checkout, never a T3-managed temporary worktree or remote workspace.
+- Resolve the current repository from the active thread's working directory. If it is already the primary checkout, use it. If it is a T3 worktree, inspect `git worktree list --porcelain`, compare the candidates' Git common directories, and choose the matching checkout whose top-level `.git` is a directory rather than a worktree `.git` file. Do not assume the first listed worktree is primary. Pass the exact checkout path with `--cwd`; do not guess a parent, use the home repository, or switch branches.
+- If the CLI returns `needsSelection`, show the returned project choices and ask the user which one to use. Rerun the original command with `--cwd` set to that exact repository path. Never choose a project on the user's behalf.
+- If the exact checkout cannot be established, stop and ask the user to select or open the intended repository.
+
+## Dispatch safely
+
+1. Resolve the user's home directory and the installed CLI at `<home>/.agents/factory/cli.ts`. Require Node.js 24+, Git, and that installed path. Report a missing prerequisite instead of improvising another workflow.
+2. Identify the provider running this T3 thread and map it to the worker runtime: OpenAI Codex to `codex`, Claude to `claude`, or OpenCode to `opencode`. T3 is the caller, not a worker. If the provider cannot be identified, omit `--worker`; the CLI defaults T3 requests to Codex. A project's configured runtime takes precedence for an existing project.
+3. Run Node.js with `--caller t3`, the optional `--worker <codex|claude|opencode>`, optional `--cwd <checkout>`, and the complete CLI command text as one argument. Pass arguments through a process API as an argv array when available. Otherwise quote the CLI path, checkout path, and entire command argument for the actual shell. Never use `eval`, an unquoted command string, or shell interpolation of user text.
+
+## Report the result
+
+- On error, give the concrete CLI error. On workspace selection, ask the user to choose as described above.
+- For an accepted job, report its ID and state plus the dashboard URL returned by the CLI. A `plan` command creates a draft without launching workers; report the draft ID and make that clear.
+- Acceptance or queueing is not implementation completion. Do not claim checks passed or work finished unless the runtime reports that evidence. Work-profile jobs require a human to merge their PR in GitHub; personal-mode behavior follows the project's explicit policy.
+- Stop after the command result. The detached Factory runtime continues independently of this T3 chat.
 
 ## Commands
 
@@ -25,4 +43,4 @@ Run in the main checkout, not a T3-managed temporary worktree: T3's **Local** th
 - `factory answer <id> <response>`
 - `factory config` — view policy; change it only on explicit user request
 
-Work mode ends at a human-merge-ready PR. Personal mode may merge under explicit project policy. Preserve all existing skills. Report missing prerequisites rather than inventing `t3 run` or pretending T3 is a headless worker executable.
+Work mode ends at a human-merge-ready PR. Personal mode may merge under explicit project policy. Do not modify or replace existing skills. Report missing prerequisites rather than inventing `t3 run` or pretending T3 is a headless worker executable.

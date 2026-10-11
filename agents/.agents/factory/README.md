@@ -59,7 +59,7 @@ $factory status
 $factory dashboard
 ```
 
-The skill dispatches `node <home>/.agents/factory/cli.ts --caller t3 --worker codex|claude|opencode <command>`. It chooses the current provider where known; omitting `--worker` defaults a new project to Codex. Existing project policy always wins. Change workers explicitly with `/factory config runtime codex` (or `claude` / `opencode`). `t3` is not a worker runtime: its CLI starts the T3 server, not a one-shot agent task.
+The skill dispatches `node <home>/.agents/factory/cli.ts --caller t3 --worker codex|claude|opencode [--cwd <checkout>] <command>`, passing the full command as one argument. It maps the active T3 provider to its standalone worker CLI; if the provider is unknown, the CLI defaults to Codex. Existing project runtime policy wins. From a T3 worktree, the skill identifies the matching primary checkout and passes it with `--cwd`; if the project is ambiguous, it asks you to choose. Change workers explicitly with `/factory config runtime codex` (or `claude` / `opencode`). `t3` is not a worker runtime: its CLI starts the T3 server, not a one-shot agent task.
 
 Codex workers use `codex -a never exec --json --ephemeral`, strict structured reports, and `read-only` or `workspace-write` sandboxing. They do not disable the sandbox or auto-approve sandbox escapes. To isolate inherited hooks/MCP configuration, the adapter uses `--ignore-user-config`; custom provider configuration from `config.toml` is consequently not inherited. Standalone CLI authentication must work on this machine; a T3-only account connection is not necessarily a standalone Codex login. Codex exec does not report USD pricing, so its dashboard cost says **USD n/a** and only time/iteration budgets are meaningful for that worker.
 
@@ -130,6 +130,8 @@ The global project registry, daemon descriptor and daemon log live under `~/.loc
 ## Dashboard
 
 Plain HTML/CSS/JavaScript, served on a random localhost port, with Server-Sent Events for progress. Four lanes: Queued, Building, Reviewing, Ready. Needs you is separate; paused/interrupted/completed/cancelled jobs are expandable. Cards open specs, decisions, review findings, checks and evidence. No status drag/drop or merge button.
+
+The dashboard defaults to a soft charcoal dark theme with light text and subdued blue-gray surfaces. Native form controls follow the dark color scheme too.
 
 Reports are rendered as text, never executed HTML. Requests validate localhost host/origin, state changes require a per-daemon token, and artifacts are allowlisted with realpath checks. Raw agent transcripts and stderr logs are not served. Check logs may still contain sensitive application output: avoid logging secrets.
 

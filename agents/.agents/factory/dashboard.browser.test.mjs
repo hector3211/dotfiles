@@ -31,6 +31,24 @@ test('dashboard: inspect, pause, answer, live-update preservation and mobile lay
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(app.url);
   await page.getByRole('button', { name: 'Invoice export', exact: true }).waitFor();
+  assert.equal(await page.locator('html').evaluate(el => getComputedStyle(el).colorScheme), 'dark');
+  assert.equal(await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(48, 57, 67)');
+  assert.equal(await page.locator('.topbar').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(57, 69, 80)');
+  assert.equal(await page.locator('.answer-input').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(48, 58, 68)');
+  const primaryContrast = await page.locator('.btn-primary').evaluate(el => {
+    const channel = value => {
+      const normalized = value / 255;
+      return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = color => {
+      const rgb = color.match(/[\d.]+/g).map(Number);
+      return 0.2126 * channel(rgb[0]) + 0.7152 * channel(rgb[1]) + 0.0722 * channel(rgb[2]);
+    };
+    const background = luminance(getComputedStyle(el).backgroundColor);
+    const foreground = luminance(getComputedStyle(el).color);
+    return (Math.max(background, foreground) + 0.05) / (Math.min(background, foreground) + 0.05);
+  });
+  assert.ok(primaryContrast >= 4.5, `Primary button contrast was ${primaryContrast.toFixed(2)}:1`);
   assert.equal(await page.locator('#empty').isVisible(), false);
   await page.getByRole('button', { name: 'Invoice export', exact: true }).click();
   await page.getByRole('heading', { name: 'Invoice export', exact: true }).waitFor();
