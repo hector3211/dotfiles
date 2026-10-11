@@ -86,9 +86,19 @@
 
   /* ---------- formatting ---------- */
 
-  function money(usd, runtime) {
+  function money(usd, runtime, executionMode) {
+    if (executionMode === 'agent') return 'Cost not reported';
     if (runtime === 'codex') return 'USD n/a';
     return Number.isFinite(usd) ? `$${usd.toFixed(2)}` : '$0.00';
+  }
+
+  function isObserver(job) {
+    return job.executionMode === 'agent';
+  }
+
+  function reportedStateLabel(job) {
+    const value = job.reportedState || job.state;
+    return STATE_LABELS[value] || value || '-';
   }
 
   function shortSha(sha) {
@@ -220,7 +230,7 @@
     conn.classList.toggle('conn-live', on);
     conn.classList.toggle('conn-dead', !on);
     conn.classList.remove('conn-idle');
-    $('conn-text').textContent = on ? 'Live' : 'Disconnected';
+    $('conn-text').textContent = on ? 'Dashboard live' : 'Disconnected';
   }
 
   function connectEvents() {
@@ -265,8 +275,20 @@
   }
 
   function controlsFor(job) {
+    if (job.executionMode === 'legacy') return [];
     const controls = [];
     const id = job.id;
+    if (isObserver(job)) {
+      const current = job.state === 'interrupted' ? 'interrupted' : job.reportedState || job.state;
+      if (['queued', 'building', 'reviewing', 'ready'].includes(current)) {
+        controls.push(actionButton('Request pause', 'btn-quiet', { action: 'pause', id }, job));
+        controls.push(actionButton('Request cancel', 'btn-danger', { action: 'cancel', id }, job));
+      } else if (['needs-human', 'paused', 'interrupted'].includes(current)) {
+        controls.push(actionButton('Request resume', 'btn-primary', { action: 'resume', id }, job));
+        controls.push(actionButton('Request cancel', 'btn-danger', { action: 'cancel', id }, job));
+      }
+      return controls;
+    }
     switch (job.state) {
       case 'queued':
       case 'building':
@@ -281,7 +303,6 @@
         controls.push(actionButton('Cancel', 'btn-danger', { action: 'cancel', id }, job));
         break;
       case 'ready': {
-        // Ready work is only ever opened as a pull request, never merged here.
         const pr = externalLink(job.pr, 'Open PR', 'btn btn-primary pr-action');
         if (pr) controls.push(pr);
         controls.push(actionButton('Pause', 'btn-quiet', { action: 'pause', id }, job));
@@ -294,13 +315,14 @@
   }
 
   function answerForm(job) {
+    const observer = isObserver(job);
     const input = h('textarea', {
       class: 'answer-input', rows: '3', required: true,
       'aria-label': `Your answer for ${job.title}`,
       placeholder: 'Type the answer the job is waiting for',
     });
     const submit = h('button', { class: 'btn btn-primary', type: 'submit', text: 'Send answer' });
-    const cancelBtn = actionButton('Cancel job', 'btn-danger', { action: 'cancel', id: job.id }, job);
+    const cancelBtn = observer ? null : actionButton('Cancel job', 'btn-danger', { action: 'cancel', id: job.id }, job);
     const form = h('form', { class: 'answer-form' },
       h('label', { class: 'answer-label', text: 'Your answer' }),
       input,
@@ -318,7 +340,8 @@
 
   function stateBadge(job) {
     const st = KNOWN_STATES.has(job.state) ? job.state : 'queued';
-    return h('span', { class: `badge st-${st}`, text: STATE_LABELS[st] });
+    const inactiveObserver = isObserver(job) && st === 'interrupted';
+    return h('span', { class: `badge st-${st}`, text: inactiveObserver ? 'Inactive' : STATE_LABELS[st] });
   }
 
   function trail(job) {
@@ -339,11 +362,12 @@
   }
 
   function metaLine(job) {
-    const bits = [`Round ${job.round ?? 1}`];
-    if (job.config && job.config.profile) bits.push(job.config.profile);
-    const active = activeTime(job.activeMs);
+    const bits = isObserver(job) ? ['Current agent'] : [`Round ${job.round ?? 1}`];
+    if (!isObserver(job) && job.config && job.config.profile) bits.push(job.config.profile);
+    const active = isObserver(job) ? null : activeTime(job.activeMs);
     if (active) bits.push(active);
-    bits.push(`updated ${ago(job.updatedAt)}`);
+    if (isObserver(job)) bits.push(`last report ${stamp(job.heartbeatAt) || 'unknown'}`);
+    else bits.push(`updated ${ago(job.updatedAt)}`);
     return h('div', { class: 'card-meta', text: bits.join(' · ') });
   }
 
@@ -354,7 +378,7 @@
 
     kids.push(h('div', { class: 'card-top' },
       h('span', { class: 'card-project', text: job.projectName || job.project || 'project' }),
-      h('span', { class: 'card-cost', text: money(job.costUSD, job.config?.runtime) })));
+      h('span', { class: 'card-cost', text: money(job.costUSD, job.config?.runtime, job.executionMode) })));
 
     kids.push(h('button', {
       class: 'card-title',
@@ -366,7 +390,10 @@
 
     kids.push(h('div', { class: 'card-stage-row' },
       trail(job),
-      h('span', { class: 'card-stage', text: job.stage || '-' })));
+      h('span', { class: 'card-stage', text: isObserver(job) && job.state === 'queued' ? 'Awaiting agent' : (job.stage || '-') })));
+
+    if (job.executionMode === 'legacy') kids.push(h('span', { class: 'mode-label', text: 'Legacy record' }));
+    else if (isObserver(job)) kids.push(h('span', { class: 'mode-label', text: 'Observer · agent-reported' }));
 
     if (job.activity) kids.push(h('p', { class: 'card-activity', text: job.activity }));
 
@@ -414,10 +441,10 @@
         }),
         h('span', {
           class: 'human-meta',
-          text: `${job.projectName || job.project} · round ${job.round ?? 1} · ${money(job.costUSD, job.config?.runtime)}`,
+          text: `${job.projectName || job.project} · ${isObserver(job) ? 'current agent' : `round ${job.round ?? 1}`} · ${money(job.costUSD, job.config?.runtime, job.executionMode)}`,
         })),
       decisionFields(job.decision),
-      answerForm(job));
+      job.executionMode === 'legacy' ? null : answerForm(job));
   }
 
   /* ---------- board rendering ---------- */
@@ -529,6 +556,7 @@
   function sectionSpec(job, documents) {
     const docs = documents && typeof documents === 'object' ? Object.entries(documents) : [];
     const kids = [];
+    if (isObserver(job)) kids.push(h('p', { class: 'evidence-note', text: 'Documents are agent-reported and not independently verified by the dashboard.' }));
     if (job.request) {
       kids.push(h('div', { class: 'doc', open: true },
         h('div', { class: 'detail-none', text: 'Request' }),
@@ -552,12 +580,15 @@
       metaItem('Target', job.targetBranch || '-', true),
       metaItem('Base', shortSha(job.baseSha), true),
       metaItem('Round', String(job.round ?? 1)),
-      metaItem('Cost', money(job.costUSD, job.config?.runtime)),
-      metaItem('Active', activeTime(job.activeMs) || '0m'),
-      metaItem('Profile', (job.config && job.config.profile) || '-'),
+      metaItem('Cost', money(job.costUSD, job.config?.runtime, job.executionMode)),
+      isObserver(job) ? metaItem('Active time', 'Not reported') : metaItem('Active', activeTime(job.activeMs) || '0m'),
+      isObserver(job) ? metaItem('Last agent report', stamp(job.heartbeatAt) || 'Not reported') : null,
+      isObserver(job) ? metaItem('Last reported state', reportedStateLabel(job)) : null,
+      metaItem(isObserver(job) ? 'Execution' : 'Profile', isObserver(job) ? 'Current agent session' : (job.config && job.config.profile) || '-'),
       metaItem('Model', (job.config && job.config.model) || '-')));
+    if (isObserver(job)) kids.push(h('p', { class: 'evidence-note', text: 'Build checks and evidence are agent-reported; the dashboard does not independently verify them.' }));
 
-    const checks = ev && Array.isArray(ev.checks) ? ev.checks : [];
+    const checks = Array.isArray(job.reportedChecks) ? job.reportedChecks : ev && Array.isArray(ev.checks) ? ev.checks : [];
     if (checks.length) {
       const rows = checks.map((c) => h('tr', {},
         h('td', { text: c.name || '-' }),
@@ -591,7 +622,7 @@
     const kids = [];
     if (job.decision) kids.push(decisionFields(job.decision));
     else kids.push(h('p', { class: 'detail-none', text: 'No open decisions.' }));
-    if (job.state === 'needs-human') kids.push(answerForm(job));
+    if (job.state === 'needs-human' && job.executionMode !== 'legacy') kids.push(answerForm(job));
     return section('Decisions', ...kids);
   }
 
@@ -614,18 +645,19 @@
   function sectionApproval(job) {
     const ev = job.evidence;
     const kids = [];
+    if (isObserver(job)) kids.push(h('p', { class: 'evidence-note', text: 'Review verdicts and findings are agent-reported, not server-verified.' }));
 
-    if (ev && ev.review) {
-      const review = ev.review;
+    const review = job.reportedReview || ev?.review;
+    if (review) {
       kids.push(h('div', { class: 'meta-grid' },
         h('div', { class: 'meta-item' },
           h('span', { class: 'meta-key', text: 'Verdict' }),
           h('span', { class: 'meta-val' }, verdictBadge(review.verdict))),
-        metaItem('Reviewed', `${stamp(ev.reviewedAt)} (${ago(ev.reviewedAt)})`),
-        metaItem('Round', String(ev.round ?? job.round ?? 1)),
-        metaItem('Commit', shortSha(ev.sha), true),
-        metaItem('Spec hash', shortSha(ev.specHash), true),
-        metaItem('Config hash', shortSha(ev.configHash), true)));
+        metaItem(isObserver(job) ? 'Last agent report' : 'Reviewed', isObserver(job) ? stamp(job.heartbeatAt) : `${stamp(ev?.reviewedAt)} (${ago(ev?.reviewedAt)})`),
+        metaItem('Round', String(ev?.round ?? job.round ?? 1)),
+        metaItem('Commit', shortSha(ev?.sha), true),
+        isObserver(job) ? null : metaItem('Spec hash', shortSha(ev?.specHash), true),
+        isObserver(job) ? null : metaItem('Config hash', shortSha(ev?.configHash), true)));
 
       if (review.summary) kids.push(h('p', { class: 'finding-body', text: review.summary }));
 
@@ -662,7 +694,9 @@
 
   function sectionArtifacts(job, artifacts) {
     const items = Array.isArray(artifacts) ? artifacts : [];
-    const kids = [h('p', { class: 'artifact-note', text: 'Approved reports and check logs for this job.' })];
+    const kids = [h('p', { class: 'artifact-note', text: isObserver(job)
+      ? 'Agent-reported documents and artifacts; not independently verified by the dashboard.'
+      : 'Approved reports and check logs for this job.' })];
     if (items.length) {
       kids.push(h('ul', { class: 'artifact-list' },
         items.map((p) => h('li', {},
@@ -682,11 +716,23 @@
           h('span', { class: 'badge', text: job.projectName || job.project || '-' }),
           h('span', { class: 'badge', text: (job.config && job.config.profile) || '-' }),
           h('span', { class: 'badge', text: `round ${job.round ?? 1}` }),
+          job.executionMode === 'legacy' ? h('span', { class: 'badge mode-legacy', text: 'Legacy record' }) : null,
+          isObserver(job) ? h('span', { class: 'badge', text: 'Execution mode: agent' }) : null,
           h('span', { class: 'badge mono', text: job.id }))),
       h('button', {
         class: 'detail-close', type: 'button', 'aria-label': 'Close detail', text: '×',
         onclick: () => dialog.close(),
       }));
+  }
+
+  function pendingControlsSection(controls) {
+    if (!Array.isArray(controls) || controls.length === 0) return null;
+    return h('section', { class: 'pending-controls', 'aria-label': 'Pending agent requests', role: 'status' },
+      h('h3', { class: 'pending-title', text: 'Pending requests' }),
+      h('ul', { class: 'pending-list' }, controls.map((control) => h('li', { class: 'pending-item' },
+        h('strong', { text: `${control.action || 'Control'} request` }),
+        h('span', { text: stamp(control.createdAt) || 'Time unknown' }),
+        h('span', { class: 'pending-wait', text: 'Waiting for agent checkpoint' })))));
   }
 
   function renderDetail() {
@@ -696,7 +742,9 @@
     const controls = controlsFor(job);
     setKids(detailBody, [
       detailHeader(job),
+      job.executionMode === 'legacy' ? h('p', { class: 'legacy-notice', role: 'note', text: 'Legacy record · read-only dashboard controls.' }) : null,
       controls.length ? h('div', { class: 'detail-controls' }, controls) : null,
+      pendingControlsSection(d.pendingControls),
       detailErrorRegion(),
       sectionSpec(job, d.documents),
       sectionBuild(job),

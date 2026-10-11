@@ -1,0 +1,23 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const exec = promisify(execFile);
+
+test('installation is repeatable and preserves unrelated skills', async t => {
+  const home = await fs.mkdtemp(path.join(os.tmpdir(), 'factory-install-'));
+  t.after(() => fs.rm(home, { recursive: true, force: true, maxRetries: 5 }));
+  const sentinel = path.join(home, '.agents', 'skills', 'keep-existing', 'SKILL.md');
+  await fs.mkdir(path.dirname(sentinel), { recursive: true }); await fs.writeFile(sentinel, 'Leave existing skills untouched');
+  const env = { ...process.env, FACTORY_INSTALL_HOME: home };
+  const installer = path.join(import.meta.dirname, 'install.mjs');
+  await exec(process.execPath, [installer], { env }); await exec(process.execPath, [installer], { env });
+  assert.equal(await fs.realpath(path.join(home, '.agents', 'factory')), await fs.realpath(import.meta.dirname));
+  assert.match(await fs.readFile(path.join(home, '.claude', 'commands', 'factory.md'), 'utf8'), /current.*agent|current.*session/s);
+  assert.match(await fs.readFile(path.join(home, '.config', 'opencode', 'commands', 'factory.md'), 'utf8'), /SKILL\.md/);
+  assert.equal(await fs.readFile(sentinel, 'utf8'), 'Leave existing skills untouched');
+  for (const root of ['.agents', '.claude']) assert.equal(await fs.realpath(path.join(home, root, 'skills', 'factory')), await fs.realpath(path.join(import.meta.dirname, 'skill')));
+});

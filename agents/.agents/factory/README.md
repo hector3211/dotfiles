@@ -1,162 +1,64 @@
-# Local software factory
+# Factory
 
-A dependency-free local runtime and HTML operations board. Source lives in your dotfiles; `~/.agents/factory` points here. Pi, OpenCode, Claude Code, and T3 Code share the same jobs and server. T3 is a host entry point; its jobs use standalone Codex, Claude, or OpenCode workers.
+Factory is a lightweight local dashboard for work performed by the **current interactive agent**. The agent selects a repository, implements the request with its own tools, independently verifies and reviews the changes, and reports progress to the dashboard. The helper only stores observations, documents, artifacts, and controls: it never launches workers, executes implementation, resumes a job, creates Git worktrees, or merges work. Closing the session can interrupt the work; the dashboard marks a job inactive after five minutes without a report and does not claim that work continues.
 
-## Install once
+## Setup
 
-Prerequisites: **Node.js 24+, Git, and one authenticated agent CLI**. GitHub CLI (`gh`) is needed only for issue intake, PR publication, and merge monitoring. No dependency is added to your application.
+Requires Node.js 24+ and npm. From the dotfiles checkout:
 
-Linux or Windows, from the dotfiles checkout:
-
-```text
+```sh
+npm --prefix agents/.agents/factory ci --omit=dev --ignore-scripts
 node agents/.agents/factory/install.mjs
 ```
 
-Reload pi (`/reload`) or restart OpenCode/Claude Code to discover `/factory`. Linux dotfiles bootstrap also installs these links. On Windows the installer uses a directory junction and copies the tiny host adapters when file symlinks are unavailable. It refuses to overwrite unrelated resources; existing Matt Pocock skills are untouched. If a Windows adapter changes in a later update, remove only that factory-owned adapter copy and rerun installation.
+The observer uses pinned Effect **v4 beta.98** packages and a committed lockfile. Its CLI is built on `effect/unstable/cli`; its daemon uses Effect scopes for shutdown and cleanup, schemas validate reporting commands, and a semaphore serializes record mutations. These packages belong to Factory, not your application. Linux bootstrap installs them automatically. Reload pi with `/reload` after updating the entrypoint; idle dashboard daemons update automatically on the next reporting command.
 
-The optional terminal launcher is `~/.local/bin/factory` on Linux and `%USERPROFILE%\.local\bin\factory.cmd` on Windows; add that directory to PATH if desired. Slash commands do not require that PATH change.
+## Entry points
 
-## Use in any trusted workspace
+Use `/factory <request>` in Pi, Claude Code, or OpenCode. A bare `/factory` asks what work you want. `/factory new <request>` is equivalent to a request; `new` does not force a new project. The full skill at `~/.agents/factory/skill/SKILL.md` defines the workflow. Pi passes that skill, the request, and cwd to the current agent with a triggered turn. Claude and OpenCode commands direct their current agent to read and follow it.
 
-```text
-/factory Add CSV invoice exports
-/factory issue #123
-/factory status
-/factory dashboard
-/factory inspect <id>
-/factory pause <id>
-/factory resume <id>
-/factory cancel <id>
-/factory answer <id> Exclude customer emails
-/factory config
+Explicit dashboard-management actions are `dashboard`, `status`, `inspect <id>`, `pause <id>`, `resume <id>`, `cancel <id>`, and `answer <id> <decision>`. Pause/cancel are requests acknowledged by the agent at a safe point. Resume in a new session means inspecting the saved job data and continuing as the current agent, not restarting a worker.
+
+## Observation helper
+
+The minimal Node helper is `~/.agents/factory/cli.ts`. Structured calls use an absolute private JSON file (`--request-file <absolute-path>`) or `--request-json '<object>'`; start requests need `description` and `cwd`, with optional `runtime` and `model`:
+
+```json
+{"action":"start","description":"Add CSV export","cwd":"/absolute/repo","runtime":"optional","model":"optional"}
 ```
 
-You can start in a workspace directory. Pi offers a picker for its immediate child repositories, **New project**, or **Plan only**. A parent home-directory repository is never silently inherited. Other hosts receive a structured `needsSelection` response; rerun the CLI with `--cwd <project>` or use the explicit commands below. Repository subdirectories still resolve to their project root.
+Start saves an observation, returns a job ID and dashboard URL, and requires no Git repository. Subsequent structured actions:
 
-```text
-/factory new my-app Build an invoice application
-/factory plan Explore invoice exports
-/factory attach <draft-id> <repository-path>
-```
+- `report`: `{ "action":"report", "id":"...", "activity":"...", "state":"...", "stage":"...", "project":"...", "worktree":"...", "branch":"...", "lastSummary":"...", "pr":"...", "error":"..." }`. States: `queued`, `building`, `reviewing`, `ready`, `needs-human`, `paused`, `cancelled`, `completed`, `interrupted`. Stages: `plan`, `build`, `verify`, `review`, `deliver`.
+- `document`: `{ "action":"document", "id":"...", "name":"spec.md|build.md|decisions.md|approval.md", "content":"..." }`.
+- `artifact`: `{ "action":"artifact", "id":"...", "name":"simple-name.md|simple-name.json|simple-name.log", "content":"..." }` (simple filename only).
+- `checkpoint`: `{ "action":"checkpoint", "id":"..." }`, returning the job and pending controls; `ack`: `{ "action":"ack", "id":"...", "controlId":"...", "state":"...", "activity":"..." }`.
 
-`new` creates a new child directory, initializes `main`, and makes an empty initial commit before queuing normal isolated work. It refuses existing directories and never stages your files. `plan` saves a Git-free request draft in the global state directory; it does **not** launch planning workers yet. `attach` queues that saved request against a repository exactly once. Drafts are not job cards until attached. A repository with no commits needs an explicit initial commit; Factory will not commit existing files for you.
+Reports can also include `checks: [{ "name":"tests", "command":"npm test", "status":"passed", "exitCode":0, "artifact":"artifacts/tests.log" }]` and `review: { "verdict":"pass", "summary":"...", "findings":[] }`. These populate the dashboard as agent-reported evidence, not server-certified results.
 
-The first feature detects the invoking host and remembers it as the worker runtime. Pi also passes its selected model. OpenCode and Claude workers initially use their own default model. Every host can subsequently manage those same jobs. Slash-command arguments are passed through a small host adapter; Claude/OpenCode adapters use their agent to dispatch the CLI, while pi registers a native command.
+`decision` is optional on reports: `{ "blockedOn":"...", "alreadyTried":["..."], "recommendation":"...", "needFromYou":"..." }`; use `null` to clear it.
 
-Each feature gets a unique branch and worktree. The main checkout's source files are not modified by feature implementation. Registration adds `.factory/` to `.gitignore`; that ignore rule is the only intentional repository setup edit. Tracked `.factory` content causes registration to fail rather than silently claiming it is ignored.
+Report before and after each stage, and check controls between stages. Dashboard inactivity is not evidence of process state. Never claim live tool logs or exact cost; the helper does not report them.
 
-The browser opens on first job creation. Closing the browser or agent chat does not stop the detached runtime. Two jobs can run globally; each job runs its planner, builder, verifier, independent reviewer, and relevant UI/security specialists. Specialist calls are sequential within a job in this first version, bounding total worker processes at two. Feature jobs remain independent.
+## Workspace, safety, and delivery
 
-## T3 Code
+The agent chooses the target repository with the user when ambiguous. It must not infer a repo from the home directory or stage unrelated changes. Repository initialization requires explicit user choice; the agent explains whether it will reuse the selected workspace or isolate changes in a worktree. Run project-appropriate tests, inspect all changes, conduct an independent review, fix issues, and report evidence. Commit or push only with explicit user authorization; never merge automatically.
 
-The installer adds the shared skill at `~/.agents/skills/factory` (Codex discovery) and `~/.claude/skills/factory` (Claude discovery). The existing OpenCode `/factory` command is available through T3's OpenCode provider. The source remains `~/.agents/factory/skill`, linked to your dotfiles; no T3 fork, extra server, or per-project setup is required.
+The agent and repository commands run with the host agent's permissions. The dashboard is an observer, not a sandbox or durable execution service. Avoid sensitive data in reports and artifacts. A missed report may leave the dashboard stale until its inactivity calculation catches up.
 
-In T3, use **Restart agent session** from the command palette after installation. Choose **Local** thread mode: the factory creates its own feature worktrees. Type `/factory` and select the skill from the menu, or pick `$factory` directly, then add your request. If skills are hidden from `/`, enable **Settings → General → Show skills in slash menu** or use `$`.
+## Existing records and migration
 
-```text
-$factory Add CSV invoice exports
-$factory status
-$factory dashboard
-```
+Records from the former unattended-worker factory are historical, read-only data; this workflow does not attach, resume, or migrate them into current-session execution. Inspect them for reference, then start a new observation for new work. Unattended execution, automatic verification/review workers, automatic PR creation, and automatic merging have been removed. The worker-launching implementation has been removed. Existing job records and worktrees are preserved and available for read-only inspection. An idle old daemon is migrated automatically. If a legacy worker is running, normal observer commands refuse to dispatch to it; `/factory migrate` explicitly stops that old runtime gracefully before starting the observer. This is the only migration path that may stop old workers and mark their records interrupted. Observer updates preserve the dashboard's listening URL so existing tabs can reconnect.
 
-The skill dispatches `node <home>/.agents/factory/cli.ts --caller t3 --worker codex|claude|opencode <command>`. It chooses the current provider where known; omitting `--worker` defaults a new project to Codex. Existing project policy always wins. Change workers explicitly with `/factory config runtime codex` (or `claude` / `opencode`). `t3` is not a worker runtime: its CLI starts the T3 server, not a one-shot agent task.
-
-Codex workers use `codex -a never exec --json --ephemeral`, strict structured reports, and `read-only` or `workspace-write` sandboxing. They do not disable the sandbox or auto-approve sandbox escapes. To isolate inherited hooks/MCP configuration, the adapter uses `--ignore-user-config`; custom provider configuration from `config.toml` is consequently not inherited. Standalone CLI authentication must work on this machine; a T3-only account connection is not necessarily a standalone Codex login. Codex exec does not report USD pricing, so its dashboard cost says **USD n/a** and only time/iteration budgets are meaningful for that worker.
-
-Integration was checked against T3 `v0.0.45` (`docs/user/composer.md`, `docs/user/providers-claude.md`, and `packages/client-runtime/src/providerSkills.ts`). A real Codex app-server `skills/list` request confirmed the installed factory skill is enabled and user-scoped. Paid feature execution through T3 has not been tested.
-
-## Work and personal policy
-
-Unknown projects default to **work**, with **PR publication off** until you authorize it once:
-
-```text
-/factory config publish true
-```
-
-After this, the factory autonomously publishes verified PRs. Work jobs stop at **Ready for human merge**. They never invoke the runtime's merge operation, and the dashboard has no merge control. Merge in GitHub; the factory observes completion.
-
-Personal mode explicitly enables eligible automatic merging:
-
-```text
-/factory config profile personal
-/factory config publish true
-```
-
-Automatic merging requires current SHA/spec/policy-bound local checks and review, no blocking findings, GitHub checks passing, a clean nondraft PR, and no outstanding required/negative GitHub review. It checks the target commit, integrates an updated target, and reruns verification rather than reusing stale evidence. GitHub branch protection remains authoritative.
-
-Changing a project's policy invalidates prior evidence. Resume an existing locally-ready job after enabling publication; it revalidates under the updated policy. Agents are instructed not to edit policy. Config changes are explicit user actions through `/factory config`, not an agent approval step.
-
-## Discovery and limits
-
-Standard `test`, `lint`, and `typecheck` package scripts are detected using npm/pnpm/yarn/bun lockfiles. With no standard scripts, the planner investigates repository instructions and proposes actual verification commands. The runtime executes commands and records their exit status. Missing checks do not count as passed.
-
-Configure unusual commands when necessary (quote JSON appropriately for a terminal; slash commands preserve it as text):
-
-```text
-/factory config requiredChecks [{"name":"tests","command":"python -m pytest"}]
-/factory config runtime codex
-/factory config model anthropic/claude-sonnet-4-6
-/factory config maxRounds 8
-/factory config budgetMinutes 180
-/factory config maxCostUSD 20
-```
-
-Switching runtime clears the previous model override because model names differ across CLIs. Commands must be valid for the machine's shell: `/bin/sh` on Linux, `cmd.exe` on native Windows. Configure platform-specific commands for repositories without portable scripts.
-
-Default budgets: six iterations, 120 active minutes per job, 20 minutes per worker/check, and $15 **reported** agent cost. Cost is accounted after agent messages/stages, not a prepaid provider spending cap. Providers may omit or estimate costs. Time and iteration bounds are enforceable; do not treat the displayed dollar budget as a guaranteed billing ceiling.
-
-Routine ambiguity and failures trigger investigation and repair, not immediate questions. Human cards contain only **Blocked on**, **Already tried**, **Recommendation**, and **Need from you**. Answering records the decision and queues continuation. Cancellation and pause preserve the worktree; no automatic destructive cleanup is implemented.
-
-## Local records
-
-```text
-<project>/.factory/
-  config.json
-  jobs/<id>-<feature>/
-    job.json
-    spec.md
-    build.md
-    decisions.md
-    approval.md
-    events.jsonl
-    rounds/001/...
-  worktrees/<id>-<feature>/
-```
-
-Completed review rounds are preserved; retries/resumed verification use new rounds. JSON snapshots are written via temporary files and atomic rename; the event history is explanatory, not the sole source of state. After interruption, jobs are marked interrupted and worktrees preserved. Recorded orphan workers are terminated only when their process start identity matches, avoiding killing recycled PIDs. Resume checks the worktree identity and reconciles changes before proceeding.
-
-The global project registry, daemon descriptor and daemon log live under `~/.local/state/software-factory/`, outside dotfiles. `FACTORY_STATE_DIR` can override this for tests or separate installations. No project is discovered by scanning your disk. Ignored records are local, not backed up by Git.
-
-## Dashboard
-
-Plain HTML/CSS/JavaScript, served on a random localhost port, with Server-Sent Events for progress. Four lanes: Queued, Building, Reviewing, Ready. Needs you is separate; paused/interrupted/completed/cancelled jobs are expandable. Cards open specs, decisions, review findings, checks and evidence. No status drag/drop or merge button.
-
-Reports are rendered as text, never executed HTML. Requests validate localhost host/origin, state changes require a per-daemon token, and artifacts are allowlisted with realpath checks. Raw agent transcripts and stderr logs are not served. Check logs may still contain sensitive application output: avoid logging secrets.
-
-## Security and current limitations
-
-**Run only in repositories you trust. Agents and repository test commands execute as your OS user. Worktrees and command guards are not a security sandbox.** The pi/OpenCode/Claude adapters restrict direct tools and common forbidden operations; the Codex adapter additionally uses its CLI sandbox, but arbitrary shell execution can bypass prompt/command restrictions. Do not supply production credentials. For a genuinely enforced human-only work merge rule, use GitHub branch rules and separate bot credentials with appropriate restrictions; sharing your personal credentials with local agents is not an authorization boundary.
-
-- UI specialists currently perform source/accessibility review. They do not launch browsers; required visual/interactive evidence remains unverified unless covered by executable project checks. The factory must not call that visual review a pass.
-- No GitHub Projects synchronization, remote dashboard, issue polling, or automatic cleanup yet.
-- New jobs start from committed target-branch code, not uncommitted main-checkout changes.
-- Windows support has a CI matrix and platform-aware implementation, but needs an actual Windows CI run; Linux tests do not prove Windows execution.
-- Real provider/model behavior is not covered by mock-adapter tests; verify a small feature with your authenticated host before high-stakes use.
+New records live in `~/.local/state/software-factory/observations/<id>/` (override with `FACTORY_STATE_DIR`). The dashboard renders only reported data; it does not independently verify tests/reviews, measure spend, or enforce agent permissions.
 
 ## Verification
 
-```text
-node --test factory.test.ts adapters.test.ts workspace.test.ts
+```sh
+cd agents/.agents/factory
+npm ci --ignore-scripts
+npm run typecheck
+npm test
 ```
 
-Optional browser test, without adding a runtime dependency:
-
-```text
-FACTORY_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node --test dashboard.browser.test.mjs
-```
-
-`FACTORY_CHROMIUM` can select a local Chromium executable. Tests use temporary repositories and mocked worker/provider responses; they do not publish real PRs or incur model costs. GitHub Actions runs the integration and adapter tests on Linux and Windows.
-
-## Adding a host later
-
-`agent.ts` normalizes CLI events to `AgentOutput`; the runtime consumes `AgentRunner`, not host session objects. A new worker adapter maps launch options, events, permissions and costs to that contract. A new host command or skill dispatches to `cli.ts`. T3 uses this seam through its native provider-skill discovery rather than an invented headless T3 CLI.
+For the optional real-browser test, set `FACTORY_PLAYWRIGHT_MODULE` to Playwright's `index.mjs` (and optionally `FACTORY_CHROMIUM` to an installed Chromium executable). No browser dependency is added to your projects.

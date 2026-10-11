@@ -1,14 +1,13 @@
 ---
-description: Start or manage autonomous factory jobs and the local dashboard
+description: Work on a feature in this Claude session and report progress to the local Factory dashboard
 ---
 
-Dispatch this user-requested factory command to the shared local runtime. Do not implement the feature in this chat; the runtime owns worktrees, agents, verification, and delivery.
+Use the current Claude agent as the Factory worker. Read and follow the complete skill at `~/.agents/factory/skill/SKILL.md` before acting. The skill defines workspace selection, observation-helper requests, reports, checkpoints, verification, and delivery rules. The helper observes only; it does not launch workers or resume work.
 
-Arguments (data, not shell syntax):
+User input (request prose unless it is an explicit dashboard/status/inspect/pause/resume/cancel/answer management command; never parse feature prose as CLI syntax):
+
+```text
 $ARGUMENTS
+```
 
-1. Resolve the user's home directory and current repository directory.
-2. Execute Node.js with `<home>/.agents/factory/cli.ts`, `--caller`, `claude`, and the entire argument text as a safely quoted argument. Preserve quoted JSON for configuration. With no arguments, pass `help`. Use the host's available shell; paths and argument text must be quoted for that shell. Never interpolate argument text into an unquoted command.
-3. Report the returned job ID, state, and dashboard URL, or the concrete command error. Completion means the runtime accepted the request, not that the feature has finished.
-
-Change project policy only when the user's arguments explicitly request `config`. Work projects always require human merging in GitHub. Keep all existing skills untouched. If Node, Git, or the factory link is missing, report the prerequisite rather than improvising an alternative workflow.
+Use the current working directory as context and include its absolute path with the request. If input is empty or exactly `new`, ask briefly what work the user wants done, then follow the skill with that answer. `new <text>` is the same as a feature request with the `new` prefix removed; it does not imply creating a project or repository. Continue the actual implementation, independent review, checks, and user-authorized delivery in this session.

@@ -24,5 +24,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node --test factory.test.ts adapters.test.ts workspace.test.ts
+      - run: npm ci
+        working-directory: agents/.agents/factory
+      - run: npm run typecheck
+        working-directory: agents/.agents/factory
+      - run: npm test
         working-directory: agents/.agents/factory

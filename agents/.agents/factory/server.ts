@@ -2,16 +2,20 @@ import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
-import type { Runtime } from './runtime.ts';
+import { sourceVersion } from './version.ts';
+import * as Effect from 'effect/Effect';
+import * as Semaphore from 'effect/Semaphore';
+import type { ObserverRuntime } from './observer.ts';
 
-export async function startServer(runtime: Runtime) {
+export async function startServer(runtime: ObserverRuntime, options: { port?: number } = {}) {
   const token = randomBytes(32).toString('hex');
+  const version = await sourceVersion();
   const clients = new Set<http.ServerResponse>();
   let origin = '';
-  let serial: Promise<unknown> = Promise.resolve();
-  const queued = <T>(fn: () => Promise<T>): Promise<T> => {
-    const next = serial.then(fn, fn); serial = next.catch(() => {}); return next;
-  };
+  const semaphore = Semaphore.makeUnsafe(1);
+  const queued = <T>(fn: () => Promise<T>): Promise<T> => Effect.runPromise(semaphore.withPermits(1)(Effect.tryPromise({
+    try: fn, catch: error => error instanceof Error ? error : new Error(String(error)),
+  })));
   const server = http.createServer(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -24,7 +28,7 @@ export async function startServer(runtime: Runtime) {
       if (req.headers['sec-fetch-site'] && !['same-origin', 'none'].includes(String(req.headers['sec-fetch-site']))) { json({ error: 'Cross-site requests are not allowed' }, 403); return; }
       const url = new URL(req.url || '/', origin);
       if (req.method === 'GET') {
-        if (url.pathname === '/api/session') { json({ token }); return; }
+        if (url.pathname === '/api/session') { json({ token, version, protocol: 'observer-v1' }); return; }
         if (url.pathname === '/api/jobs') { json(await runtime.store.list()); return; }
         if (url.pathname.startsWith('/api/jobs/')) { json(await runtime.store.detail(await runtime.store.resolve(decodeURIComponent(url.pathname.slice(10))))); return; }
         if (url.pathname === '/api/artifact') {
@@ -40,10 +44,22 @@ export async function startServer(runtime: Runtime) {
         const file = files[url.pathname];
         if (file) { res.writeHead(200, { 'Content-Type': `${file[1]}; charset=utf-8` }); res.end(await fs.readFile(path.join(import.meta.dirname, 'public', file[0]))); return; }
       }
+      if (req.method === 'POST' && url.pathname === '/api/restart') {
+        if (req.headers['x-factory-token'] !== token) { json({ error: 'Invalid action token' }, 403); return; }
+        await queued(async () => {
+          if (runtime.active.size) { json({ error: 'Factory update pending: pause running jobs before retrying this command.' }, 409); return; }
+          await runtime.shutdown();
+          json({ ok: true });
+          setTimeout(() => { clearInterval(timer); clearInterval(heartbeat); for (const client of clients) client.end(); server.close(); }, 25);
+        });
+        return;
+      }
       if (req.method === 'POST' && ['/api/action', '/api/command'].includes(url.pathname)) {
         if (req.headers['x-factory-token'] !== token) { json({ error: 'Invalid action token' }, 403); return; }
         if (!String(req.headers['content-type']).startsWith('application/json')) { json({ error: 'JSON required' }, 415); return; }
-        let body = ''; for await (const chunk of req) { body += chunk.toString(); if (body.length > 128_000) throw new Error('Request too large'); }
+        req.setEncoding('utf8');
+        let body = ''; let bytes = 0;
+        for await (const chunk of req) { bytes += Buffer.byteLength(chunk); if (bytes > 2_000_000) throw new Error('Request too large'); body += chunk; }
         const args = JSON.parse(body);
         if (url.pathname === '/api/action' && !['pause', 'resume', 'cancel', 'answer'].includes(args.action)) throw new Error('Dashboard action not allowed');
         const result = await queued(() => runtime.command(args));
@@ -52,7 +68,7 @@ export async function startServer(runtime: Runtime) {
       json({ error: 'Not found' }, 404);
     } catch (error) { if (!res.headersSent) json({ error: error instanceof Error ? error.message : String(error) }, 400); else res.end(); }
   });
-  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+  await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(options.port || 0, '127.0.0.1', resolve); });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Failed to bind local server');
   origin = `http://127.0.0.1:${address.port}`;

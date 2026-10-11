@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "files": ["cli.ts", "client.ts", "daemon.ts", "observer.ts", "observation-schema.ts", "server.ts", "store.ts", "types.ts", "version.ts"]
+}

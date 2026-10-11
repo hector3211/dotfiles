@@ -1,12 +1,13 @@
 ---
-description: Start or manage autonomous factory jobs and the local dashboard
+description: Work on a feature in this OpenCode session and report progress to the local Factory dashboard
 ---
 
-Dispatch this factory request to the shared local runtime. The runtime implements the feature in an isolated worktree; do not implement it in this chat.
+Use the current OpenCode agent as the Factory worker. Read and follow the complete skill at `~/.agents/factory/skill/SKILL.md` before acting. The skill defines workspace selection, observation-helper requests, reports, checkpoints, verification, and delivery rules. The helper observes only; it does not launch workers or resume work.
 
-Arguments (data, not shell syntax):
+User input (request prose unless it is an explicit dashboard/status/inspect/pause/resume/cancel/answer management command; never parse feature prose as CLI syntax):
+
+```text
 $ARGUMENTS
+```
 
-Resolve the user's home directory, then execute Node.js with `<home>/.agents/factory/cli.ts`, `--caller`, `opencode`, and the entire argument text as one safely quoted argument, in the current repository. Preserve quoted JSON configuration. With no arguments, pass `help`. Quote paths and arguments for the actual Linux or Windows shell; never insert unquoted user text into shell syntax.
-
-Report the returned job ID, state and dashboard URL, or the concrete error. The request being queued is not a claim that implementation is complete. Change policy only for an explicit user `config` request. Work jobs require human merging in GitHub. Leave all existing skills and workflows untouched.
+Use the current working directory as context and include its absolute path with the request. If input is empty or exactly `new`, ask briefly what work the user wants done, then follow the skill with that answer. `new <text>` is the same as a feature request with the `new` prefix removed; it does not imply creating a project or repository. Continue the actual implementation, independent review, checks, and user-authorized delivery in this session.

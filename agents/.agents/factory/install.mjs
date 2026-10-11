@@ -35,5 +35,5 @@ const content = process.platform === 'win32' ? '@echo off\r\nnode "%USERPROFILE%
 const target = path.join(bin, launcher);
 try { await fs.writeFile(target, content, { flag: 'wx', mode: 0o755 }); }
 catch (e) { if (e.code !== 'EEXIST') throw e; if (await fs.readFile(target, 'utf8') !== content) throw new Error(`Refusing to overwrite ${target}`); }
-console.log(`Factory installed. Reload your agent client, then /factory help. Optional terminal command: ${target}`);
-console.log('Existing skills were not changed. No projects were registered and no agents were started.');
+console.log(`Factory installed. Reload your agent client, then /factory new or /factory dashboard. Optional terminal command: ${target}`);
+console.log('Existing skills were not changed. No projects were changed and no agent workers were started.');

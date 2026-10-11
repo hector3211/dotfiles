@@ -156,15 +156,16 @@ The linker preserves an existing machine-local `~/.pi/agent/settings.json`, allo
 
 ## Software Factory
 
-The shared local factory lives under `agents/.agents/factory/` and is linked as `~/.agents/factory`. It provides `/factory` adapters for Pi, OpenCode, and Claude Code, a shared skill for T3 Code's Codex/Claude providers, isolated feature worktrees, autonomous verification/repair, and a localhost HTML dashboard. All existing skills remain untouched.
+The shared local factory lives under `agents/.agents/factory/` and is linked as `~/.agents/factory`. It provides `/factory` entrypoints for Pi, OpenCode, and Claude Code, a shared skill for T3 Code's Codex/Claude providers, and an Effect-powered localhost observation dashboard. Your current agent orchestrates the work; the dashboard does not launch workers. All existing skills remain untouched.
 
 Linux bootstrap installs the links. To install only the factory on Linux or Windows (Node.js 24+ and Git required):
 
 ```bash
+npm --prefix agents/.agents/factory ci --omit=dev --ignore-scripts
 node agents/.agents/factory/install.mjs
 ```
 
-Reload your agent client, then run `/factory help` or `/factory <feature>` inside a trusted Git repository. Work mode requires a human merge; personal mode can merge under explicit policy. Per-project `.factory/` records are ignored, and runtime state stays outside dotfiles. See [factory documentation](agents/.agents/factory/README.md) for permissions, current limitations, and tests. Use `--skip factory` to opt out during bootstrap.
+Reload your agent client, then run `/factory new` or `/factory <feature>` from any trusted workspace. The agent deliberately selects a project and reports its progress. Pause/cancel are checkpoint requests, not instant process controls. New observation records stay outside dotfiles; legacy `.factory/` jobs remain read-only. Commit/push require explicit user authorization; Factory never merges automatically. See [factory documentation](agents/.agents/factory/README.md) for permissions, current limitations, and tests. Use `--skip factory` to opt out during bootstrap.
 
 ## OpenCode Config
 

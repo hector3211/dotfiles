@@ -222,7 +222,7 @@ ol, ul { padding: 0; }
 
 .human-title-btn:hover { color: var(--accent-ink); text-decoration: underline; }
 
-.human-meta { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: nowrap; }
+.human-meta { font-size: 12px; color: var(--muted); font-family: var(--mono); white-space: normal; overflow-wrap: anywhere; min-width: 0; }
 
 .decision { display: grid; gap: 8px; }
 
@@ -383,6 +383,9 @@ ol, ul { padding: 0; }
 }
 
 .card-meta { font-size: 12px; color: var(--faint); display: flex; gap: 6px; flex-wrap: wrap; }
+
+.mode-label { color: var(--muted); font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.mode-legacy { color: var(--warn); border-color: #e3cf9f; background: #faf4e6; }
 
 .card-summary {
   font-size: 12.5px;
@@ -617,6 +620,24 @@ dialog.detail::backdrop { background: rgba(18, 26, 38, 0.42); }
 
 .detail-controls:empty { display: none; }
 
+.pending-controls {
+  margin: 12px 24px 0;
+  padding: 12px 14px;
+  border: 1px solid #e3cf9f;
+  border-left: 4px solid var(--warn);
+  border-radius: 8px;
+  background: #faf4e6;
+}
+
+.pending-title { font-size: 12px; font-weight: 700; color: var(--ink); }
+.pending-list { list-style: none; display: grid; gap: 8px; margin-top: 8px; }
+.pending-item { display: grid; grid-template-columns: auto auto 1fr; gap: 4px 12px; align-items: baseline; font-size: 12px; }
+.pending-item strong { text-transform: capitalize; }
+.pending-item > span { color: var(--muted); }
+.pending-item .pending-wait { color: var(--warn); font-weight: 700; }
+.legacy-notice { padding: 10px 24px; color: var(--warn); background: #faf4e6; font-size: 13px; font-weight: 600; }
+.evidence-note { color: var(--muted); font-size: 12px; }
+
 .detail-error {
   margin: 12px 24px 0;
   padding: 10px 12px;
@@ -841,6 +862,9 @@ dialog.detail::backdrop { background: rgba(18, 26, 38, 0.42); }
   .detail-head { padding: 14px 16px 12px; }
   .detail-section { padding: 14px 16px; }
   .detail-controls { padding: 12px 16px; }
+  .pending-controls { margin: 10px 16px 0; }
+  .pending-item { grid-template-columns: 1fr; gap: 2px; }
+  .legacy-notice { padding-inline: 16px; }
 }
 
 /* ---------- reduced motion ---------- */
