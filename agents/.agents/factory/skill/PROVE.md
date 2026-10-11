@@ -1,6 +1,8 @@
 # Prove: checks plus runtime evidence
 
-Use this guide before implementation, then return to it during verification. Proof is a reproducible observation of the requested behavior, not just green tests or a code review.
+This is Factory's authoritative proof workflow. Use it before implementation, then return to it during verification, independent review, and handoff. Proof is a reproducible observation of the requested behavior, not just green tests or a code review.
+
+If `/evidence-driven-testing` is installed, read its instructions as supplemental guidance; it is optional, not a prerequisite. Factory's evidence and permission rules below still apply when other tooling suggests uploads or environment changes.
 
 ## Before: establish the baseline
 

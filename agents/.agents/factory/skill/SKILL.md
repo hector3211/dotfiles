@@ -16,9 +16,7 @@ You are the worker. Execute the request in this live agent session using your av
 
 ## Prove — evidence-driven testing
 
-Read `PROVE.md` beside this skill (installed at `~/.agents/factory/skill/PROVE.md`) before implementation. If `/evidence-driven-testing` is installed, load its instructions too; it is optional, not a prerequisite. Follow Factory's local-only evidence and permission rules if other tooling suggests uploads or environment changes.
-
-Capture the before state while reproducing the issue, before fixing it. During `verify`, capture the after state with the same scenario and run the repo's checks. Preserve the numbered before/after artifacts and proof summary for the dashboard and independent review. Green repo checks alone are not runtime proof; missing evidence is a reported gap, never an implied pass.
+Before implementation, read [PROVE.md](PROVE.md) beside this skill (installed at `~/.agents/factory/skill/PROVE.md`). It is the authoritative proof workflow; return to it during verification, independent review, and handoff.
 
 ## Work loop and controls
 
@@ -30,7 +28,7 @@ On a new session or explicit resume, inspect the existing job and read its saved
 
 ## Verify, review, deliver
 
-Complete the Prove workflow in `PROVE.md`, then inspect the resulting changes yourself. Report `checks` as `[{"name":"tests","command":"npm test","status":"passed|failed|unavailable","exitCode":0,"artifact":"artifacts/tests.log"}]` (use `null` for unknown exit codes; artifact is optional). Report independent review using `review: {"verdict":"pass|changes|blocked","summary":"...","findings":[{"severity":"blocking|warning|info","explanation":"..."}]}`. Store sanitized output with artifact actions; remove secrets before reporting. These are agent-provided observations, not verification by the dashboard. Perform an independent review after implementation; fix identified issues and rerun affected checks. Report evidence and unresolved limitations. Never merge automatically. Commit or push only when the user has explicitly authorized that policy for this task; otherwise leave changes uncommitted and summarize how the user can proceed. Update the observation to `ready` or `needs-human` at the appropriate handoff; carry the proof verdict and any gaps into the handoff. Use `completed` only when the requested local work is finished and reported, without implying that unavailable evidence passed.
+Complete the Prove workflow in `PROVE.md`, then inspect the resulting changes yourself. Report `checks` as `[{"name":"tests","command":"npm test","status":"passed|failed|unavailable","exitCode":0,"artifact":"artifacts/tests.log"}]` (use `null` for unknown exit codes; artifact is optional). Report independent review using `review: {"verdict":"pass|changes|blocked","summary":"...","findings":[{"severity":"blocking|warning|info","explanation":"..."}]}`. Store sanitized output with artifact actions; remove secrets before reporting. These are agent-provided observations, not verification by the dashboard. Perform an independent review after implementation; fix identified issues and rerun affected checks. Report evidence and unresolved limitations. Never merge automatically. Commit or push only when the user has explicitly authorized that policy for this task; otherwise leave changes uncommitted and summarize how the user can proceed. Update the observation to `ready` or `needs-human` at the appropriate handoff; use `completed` only when the requested local work is finished and reported.
 
 ## Management
 

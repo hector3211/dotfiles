@@ -42,9 +42,7 @@ Report before and after each stage, and check controls between stages. Dashboard
 
 ## Prove: before and after
 
-Factory follows [the bundled Prove guide](skill/PROVE.md): capture the baseline while reproducing the issue **before implementation**, then re-run the same scenario after the change and run applicable repo checks. An installed `/evidence-driven-testing` skill can supplement it; no additional skill or screenshot package is required.
-
-Preserve numbered `before-001.log`/`.json`, `after-001.log`/`.json`, and `proof-001.md` artifacts. For visual work, compare focused screenshots at matching viewports and exercise the affected interactions; keep screenshots/traces local and reference their exact paths in the Markdown summary. The current dashboard exposes text artifacts, not binary image previews. Public uploads, extra installs, production mutations and PR-body edits require explicit permission. Missing or inconclusive evidence is reported as a gap, not a pass.
+[PROVE.md](skill/PROVE.md) defines the authoritative proof workflow and optional testing-tool integration. The dashboard exposes its text reports; it does not certify evidence or preview screenshots.
 
 ## Workspace, safety, and delivery
 
